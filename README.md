@@ -1,2 +1,2 @@
 # Wordbender
-An LLM-powered targeted wordlist generator
+An LLM-powered targeted wordlist generator script
