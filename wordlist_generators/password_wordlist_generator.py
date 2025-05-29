@@ -3,7 +3,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 
-from generators.wordlist_generator import WordlistGenerator
+from wordlist_generators.wordlist_generator import WordlistGenerator
 
 
 class PasswordWordlistGenerator(WordlistGenerator):
