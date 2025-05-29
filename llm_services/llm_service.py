@@ -1,18 +1,42 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 
 class LlmProvider(Enum):
     """Enumeration of all LLM providers."""
 
-    OPEN_AI = auto()
-    ANTHROPIC = auto()
-    LOCAL = auto()
-    GOOGLE = auto()
-    OPEN_ROUTER = auto()
-    CUSTOM = auto()
+    # Format: (internal_name, display_name, env_var_name)
+    OPEN_AI = ("openai", "OpenAI", "OPENAI_API_KEY")
+    ANTHROPIC = ("anthropic", "Anthropic", "ANTHROPIC_API_KEY")
+    LOCAL = ("local", "Local", None) # No API key needed
+    OPEN_ROUTER = ("openrouter", "OpenRouter", "OPENROUTER_API_KEY")
+    CUSTOM = ("custom", "Custom", "CUSTOM_API_KEY")
+
+    def __init__(self, internal_name: str, display_name: str, env_var: Optional[str]):
+        self.internal_name = internal_name
+        self.display_name = display_name
+        self.env_var = env_var
+
+    @classmethod
+    def get_by_name(cls, name: str) -> Optional['LlmProvider']:
+        """Get provider by internal name (case-sensitive)."""
+        name_lower = name.lower()
+        for provider in cls:
+            if provider.internal_name == name_lower:
+                return provider
+        return None
+
+    @classmethod
+    def requiring_api_keys(cls) -> List['LlmProvider']:
+        """Get all providers that require API keys."""
+        return [p for p in cls if p.env_var is not None]
+
+    @property
+    def requires_api_key(self) -> bool:
+        """Check if this provider requires an API key."""
+        return self.env_var is not None
 
 
 @dataclass
