@@ -5,3 +5,28 @@ description = "An LLM-powered targeted wordlist generator"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+ "flake8>=7.2.0",
+ "flake8-pyproject>=1.2.3",
+ "isort>=6.0.1",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203"]
+exclude = [".git", "__pycache__", ".venv", "venv", "*/site-packages/*"]
