@@ -33,7 +33,7 @@ class LlmConfig:
 class LlmService(ABC):
     """Abstract base class for LLM services."""
 
-    def __init(self, config: LlmConfig):
+    def __init__(self, config: LlmConfig):
         self._config = config
         self._validate_config()
 
