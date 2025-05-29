@@ -10,7 +10,7 @@ class LlmProvider(Enum):
     # Format: (internal_name, display_name, env_var_name)
     OPEN_AI = ("openai", "OpenAI", "OPENAI_API_KEY")
     ANTHROPIC = ("anthropic", "Anthropic", "ANTHROPIC_API_KEY")
-    LOCAL = ("local", "Local", None) # No API key needed
+    LOCAL = ("local", "Local", None)  # No API key needed
     OPEN_ROUTER = ("openrouter", "OpenRouter", "OPENROUTER_API_KEY")
     CUSTOM = ("custom", "Custom", "CUSTOM_API_KEY")
 
@@ -20,7 +20,7 @@ class LlmProvider(Enum):
         self.env_var = env_var
 
     @classmethod
-    def get_by_name(cls, name: str) -> Optional['LlmProvider']:
+    def get_by_name(cls, name: str) -> Optional["LlmProvider"]:
         """Get provider by internal name (case-sensitive)."""
         name_lower = name.lower()
         for provider in cls:
@@ -29,7 +29,7 @@ class LlmProvider(Enum):
         return None
 
     @classmethod
-    def requiring_api_keys(cls) -> List['LlmProvider']:
+    def requiring_api_keys(cls) -> List["LlmProvider"]:
         """Get all providers that require API keys."""
         return [p for p in cls if p.env_var is not None]
 
