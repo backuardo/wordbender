@@ -1,0 +1,136 @@
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import List, Optional
+
+
+class WordlistGenerator(ABC):
+    """Abstract base class for generating targeted wordlists."""
+
+    def __init__(self, output_file: Optional[Path] = None):
+        self._seed_words: List[str] = []
+        self._generated_words: List[str] = []
+        self._output_file = output_file or self._get_default_output_path()
+        self._wordlist_length = 100
+        self._additional_instructions: Optional[str] = None
+
+    @property
+    def seed_words(self) -> List[str]:
+        """Get the current seed words."""
+        return self._seed_words.copy()
+
+    @property
+    def generated_words(self) -> List[str]:
+        """Get the generated words."""
+        return self._generated_words.copy()
+
+    @property
+    def wordlist_length(self) -> int:
+        """Get the target wordlist length."""
+        return self._wordlist_length
+
+    @wordlist_length.setter
+    def wordlist_length(self, value: int) -> None:
+        """Set the target wordlist length."""
+        if value < 1:
+            raise ValueError("Wordlist length must be positive")
+        self._wordlist_length = value
+
+    @property
+    def output_file(self) -> Path:
+        """Get the output file path."""
+        return self._output_file
+
+    @output_file.setter
+    def output_file(self, path: Path) -> None:
+        """Set the output file path."""
+        self._output_file = path
+
+    @property
+    def additional_instructions(self) -> Optional[str]:
+        """Get additional instructions for the LLM."""
+        return self._additional_instructions
+
+    @additional_instructions.setter
+    def additional_instructions(self, value: Optional[str]) -> None:
+        """Set additional instructions for the LLM."""
+        self._additional_instructions = value
+
+    @abstractmethod
+    def _get_default_output_path(self) -> Path:
+        """Return the default output file path for this generator type."""
+        pass
+
+    @abstractmethod
+    def _get_system_prompt(self) -> str:
+        """Return the system prompt specific to this generator type."""
+        pass
+
+    @abstractmethod
+    def _validate_word(self, word: str) -> bool:
+        """Validate a single word according to generator-specific rules."""
+        pass
+
+    def add_seed_words(self, *words: str) -> None:
+        """Add seed words to the generator."""
+        valid_words = [word for word in words if self._validate_word(word)]
+        if len(valid_words) != len(words):
+            invalid = set(words) - set(valid_words)
+            raise ValueError(f"Invalid seed words: {invalid}")
+        self._seed_words.extend(valid_words)
+
+    def clear_seed_words(self) -> None:
+        """Clear all seed words."""
+        self._seed_words.clear()
+
+    def build_prompt(self) -> str:
+        """Build the complete prompt for the LLM."""
+        if not self._seed_words:
+            raise ValueError("No seed words provided")
+
+        base_prompt = self._get_system_prompt().format(
+            seed_words=", ".join(self._seed_words),
+            wordlist_length=self._wordlist_length,
+        )
+
+        if self._additional_instructions:
+            return (
+                f"{base_prompt}\n\n"
+                f"Additional instructions: {self._additional_instructions}"
+            )
+
+        return base_prompt
+
+    def generate(self, llm_service) -> List[str]:
+        """Generate the wordlist using the provided LLM service."""
+        prompt = self.build_prompt()
+        raw_words = llm_service.generate_words(prompt, self._wordlist_length)
+
+        # Filter and deduplicate
+        self._generated_words = self._process_generated_words(raw_words)
+        return self.generated_words
+
+    def _process_generated_words(self, words: List[str]) -> List[str]:
+        """Process and validate generated words."""
+        seen = set()
+        processed = []
+
+        for word in words:
+            word = word.strip()
+            if word and self._validate_word(word) and word not in seen:
+                seen.add(word)
+                processed.append(word)
+
+        return processed
+
+    def save(self, path: Optional[Path] = None, append: bool = False) -> None:
+        """Save the generated wordlist to a file."""
+        if not self._generated_words:
+            raise ValueError("No words have been generated")
+
+        output_path = path or self._output_file
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        mode = "a" if append else "w"
+        with output_path.open(mode, encoding="utf-8") as f:
+            for word in self._generated_words:
+                f.write(f"{word}\n")
