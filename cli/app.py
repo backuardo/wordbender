@@ -1,0 +1,176 @@
+from typing import Dict, List, Optional
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from yaspin import yaspin
+
+from cli.factories import GeneratorFactory, LlmServiceFactory
+from cli.session import InteractiveSession
+from config import Config
+from llm_services.llm_service import LlmProvider, LlmService
+from wordlist_generators.wordlist_generator import WordlistGenerator
+
+console = Console()
+
+__version__ = "0.1.0"
+__author__ = "Ben Eisner (@backuardo)"
+
+BANNER = f"""\
+       ██╗    ██╗ ██████╗ ██████╗ ██████╗
+       ██║    ██║██╔═══██╗██╔══██╗██╔══██╗
+       ██║ █╗ ██║██║   ██║██████╔╝██║  ██║
+       ██║███╗██║██║   ██║██╔══██╗██║  ██║
+       ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝
+        ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝
+██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗
+██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗
+██████╔╝█████╗  ██╔██╗ ██║██║  ██║█████╗  ██████╔╝
+██╔══██╗██╔══╝  ██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗
+██████╔╝███████╗██║ ╚████║██████╔╝███████╗██║  ██║
+╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝
+{__author__}
+version {__version__}
+"""
+
+
+class WordbenderApp:
+    """Main CLI application controller."""
+
+    def __init__(self):
+        self.config = Config()
+        self.generator_factory = GeneratorFactory()
+        self.llm_factory = LlmServiceFactory(self.config)
+
+    @staticmethod
+    def display_banner():
+        """Display the application banner."""
+        console.print(Panel(Text(BANNER, style="bold cyan"), border_style="cyan"))
+        console.print(
+            "Professional wordlist generator for penetration testing", style="dim"
+        )
+        console.print()
+
+    def check_configuration(self) -> bool:
+        """Check if the application is properly configured."""
+        if not self.config.check_api_keys():
+            console.print("\n[red]No API keys configured![/red]")
+            console.print("Run: [cyan]wordbender config --setup[/cyan]")
+            return False
+        return True
+
+    def generate_wordlist(
+        self,
+        generator: WordlistGenerator,
+        llm_service: LlmService,
+        seed_words: List[str],
+        options: Dict,
+    ) -> bool:
+        """Generate a wordlist with the given parameters."""
+        # Configure generator
+        for word in seed_words:
+            generator.add_seed_words(word)
+
+        generator.wordlist_length = options.get("length", 100)
+
+        if "instructions" in options:
+            generator.additional_instructions = options["instructions"]
+
+        if "output_file" in options:
+            generator.output_file = options["output_file"]
+
+        # Generate with progress indicator
+        with yaspin(text="Generating wordlist...", color="cyan") as spinner:
+            try:
+                words = generator.generate(llm_service)
+                spinner.ok("✓")
+                console.print(f"[green]Generated {len(words)} unique words[/green]")
+            except Exception as e:
+                spinner.fail("✗")
+                console.print(f"[red]Generation failed: {e}[/red]")
+                return False
+
+        # Save the wordlist
+        try:
+            generator.save(append=options.get("append", False))
+            console.print(f"[green]✓ Saved to: {generator.output_file}[/green]")
+            return True
+        except Exception as e:
+            console.print(f"[red]Failed to save: {e}[/red]")
+            return False
+
+    def run_interactive_session(self):
+        """Run the interactive mode."""
+        self.display_banner()
+
+        if not self.check_configuration():
+            return
+
+        session = InteractiveSession(
+            self.config, self.generator_factory, self.llm_factory
+        )
+
+        # Select wordlist type
+        wordlist_type = session.select_wordlist_type()
+        if not wordlist_type:
+            return
+
+        # Get seed words
+        seed_words = session.get_seed_words()
+        if not seed_words:
+            return
+
+        # Get options
+        options = session.get_generation_options()
+
+        # Create generator
+        generator = self.generator_factory.create(wordlist_type)
+        if not generator:
+            console.print(f"[red]Failed to create {wordlist_type} generator[/red]")
+            return
+
+        # Select LLM service
+        service_selection = session.select_llm_service()
+        if not service_selection:
+            return
+
+        provider, model = service_selection
+        llm_service = self.llm_factory.create(provider, model)
+        if not llm_service:
+            console.print("[red]Failed to create LLM service[/red]")
+            return
+
+        # Show summary
+        self._display_generation_summary(
+            wordlist_type, seed_words, options, provider, model
+        )
+
+        # Confirm and generate
+        if session.confirm_generation():
+            self.generate_wordlist(generator, llm_service, seed_words, options)
+
+    def _display_generation_summary(
+        self,
+        wordlist_type: str,
+        seed_words: List[str],
+        options: Dict,
+        provider: str,
+        model: Optional[str],
+    ):
+        """Display a summary of the generation parameters."""
+        console.print("\n[bold]Generation Summary:[/bold]")
+        table = Table(show_header=False, box=None)
+        table.add_row("Type:", wordlist_type)
+        table.add_row("Seeds:", ", ".join(seed_words))
+        table.add_row("Length:", str(options.get("length", 100)))
+
+        # Get provider display name safely
+        provider_enum = LlmProvider.get_by_name(provider)
+        provider_display = provider_enum.display_name if provider_enum else provider
+        table.add_row("Provider:", provider_display)
+
+        if model:
+            table.add_row("Model:", model)
+
+        console.print(table)

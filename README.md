@@ -21,3 +21,21 @@ uv run isort .
 ```
 uv run flake8 .
 ```
+
+
+# TEMP
+# First run - setup wizard
+python wordbender.py config --setup
+
+# Interactive mode (default)
+python wordbender.py
+
+# Direct generation
+python wordbender.py generate password -s john -s smith -s 1985 -l 200
+
+# Batch processing
+echo -e "apple\nmicrosoft\ngoogle" > companies.txt
+python wordbender.py batch companies.txt subdomain
+
+# Check configuration
+python wordbender.py config --show

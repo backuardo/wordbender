@@ -1,0 +1,234 @@
+import importlib
+import inspect
+from pathlib import Path
+from typing import Dict, List, Optional, Type
+
+from rich.console import Console
+
+from config import Config
+from llm_services.llm_service import LlmConfig, LlmProvider, LlmService
+from wordlist_generators.wordlist_generator import WordlistGenerator
+
+console = Console()
+
+
+class ServiceDiscovery:
+    """Discovers available services from the filesystem."""
+
+    @staticmethod
+    def discover_wordlist_generators() -> Dict[str, Type[WordlistGenerator]]:
+        """Dynamically discover all wordlist generator classes."""
+        generators = {}
+        generator_dir = Path("wordlist_generators")
+
+        if not generator_dir.exists():
+            return generators
+
+        for file_path in generator_dir.glob("*_wordlist_generator.py"):
+            module_name = file_path.stem
+
+            try:
+                # Import the module
+                module = importlib.import_module(f"wordlist_generators.{module_name}")
+
+                # Find all WordlistGenerator subclasses in the module
+                for name, obj in inspect.getmembers(module):
+                    if (
+                        inspect.isclass(obj)
+                        and issubclass(obj, WordlistGenerator)
+                        and obj != WordlistGenerator
+                    ):
+
+                        # Extract the generator type from class name
+                        # e.g., "PasswordWordlistGenerator" -> "password"
+                        generator_type = name.replace("WordlistGenerator", "").lower()
+                        generators[generator_type] = obj
+
+            except ImportError as e:
+                console.print(
+                    f"[yellow]Warning: Could not import {module_name}: {e}[/yellow]"
+                )
+
+        return generators
+
+    @staticmethod
+    def discover_llm_services() -> Dict[str, Dict[str, Type[LlmService]]]:
+        """Dynamically discover all LLM service classes grouped by provider."""
+        services = {}
+        service_dir = Path("llm_services")
+
+        if not service_dir.exists():
+            return services
+
+        for file_path in service_dir.glob("*_llm_service.py"):
+            if file_path.stem == "llm_service":  # Skip the ABC
+                continue
+
+            module_name = file_path.stem
+
+            try:
+                # Import the module
+                module = importlib.import_module(f"llm_services.{module_name}")
+
+                # Find all LlmService subclasses in the module
+                for name, obj in inspect.getmembers(module):
+                    if (
+                        inspect.isclass(obj)
+                        and issubclass(obj, LlmService)
+                        and obj != LlmService
+                    ):
+
+                        # Get provider from class
+                        provider_name = ServiceDiscovery._get_provider_name(obj)
+                        if provider_name:
+                            if provider_name not in services:
+                                services[provider_name] = {}
+
+                            model_name = ServiceDiscovery._extract_model_name(name)
+                            services[provider_name][model_name] = obj
+
+            except ImportError as e:
+                console.print(
+                    f"[yellow]Warning: Could not import {module_name}: {e}[/yellow]"
+                )
+
+        return services
+
+    @staticmethod
+    def _get_provider_name(service_class: Type[LlmService]) -> Optional[str]:
+        """Get provider name from service class by instantiating it."""
+        try:
+            # Create a dummy config for inspection
+            dummy_config = LlmConfig(api_key="dummy")
+            instance = service_class(dummy_config)
+            return instance.provider.internal_name
+        except Exception:
+            # If instantiation fails, try to infer from class name
+            class_name = service_class.__name__.lower()
+            for provider in LlmProvider:
+                if provider.internal_name in class_name:
+                    return provider.internal_name
+            return None
+
+    @staticmethod
+    def _extract_model_name(class_name: str) -> str:
+        """Extract model name from class name."""
+        # Remove common suffixes
+        name = class_name.replace("LlmService", "")
+
+        # Remove provider prefixes
+        for prefix in ["OpenRouter", "Anthropic", "OpenAI", "Local"]:
+            name = name.replace(prefix, "")
+
+        # Convert to lowercase with hyphens
+        import re
+
+        name = re.sub("([a-z0-9])([A-Z])", r"\1-\2", name)
+        return name.lower().strip("-")
+
+
+class GeneratorFactory:
+    """Factory for creating wordlist generators."""
+
+    def __init__(self):
+        self._generators = ServiceDiscovery.discover_wordlist_generators()
+
+    @property
+    def available_types(self) -> List[str]:
+        """Get list of available generator types."""
+        return sorted(list(self._generators.keys()))
+
+    def create(
+        self, generator_type: str, output_file: Optional[Path] = None
+    ) -> Optional[WordlistGenerator]:
+        """Create a generator instance by type."""
+        generator_class = self._generators.get(generator_type)
+        if not generator_class:
+            return None
+        return generator_class(output_file)
+
+    def get_description(self, generator_type: str) -> str:
+        """Get description for a generator type from its docstring."""
+        generator_class = self._generators.get(generator_type)
+        if generator_class and generator_class.__doc__:
+            return generator_class.__doc__.strip().split("\n")[0]
+        return f"{generator_type.title()} wordlist generator"
+
+
+class LlmServiceFactory:
+    """Factory for creating LLM services."""
+
+    def __init__(self, config: Config):
+        self._config = config
+        self._services = ServiceDiscovery.discover_llm_services()
+
+    @property
+    def available_providers(self) -> List[str]:
+        """Get list of available providers that have implementations."""
+        return sorted(list(self._services.keys()))
+
+    def get_available_models(self, provider: str) -> List[str]:
+        """Get available models for a provider."""
+        return sorted(list(self._services.get(provider, {}).keys()))
+
+    def create(
+        self, provider: str, model: Optional[str] = None
+    ) -> Optional[LlmService]:
+        """Create an LLM service instance."""
+        provider_services = self._services.get(provider, {})
+        if not provider_services:
+            return None
+
+        # Determine which model to use
+        model_to_use = self._determine_model(provider, model, provider_services)
+        if not model_to_use:
+            return None
+
+        service_class = provider_services.get(model_to_use)
+        if not service_class:
+            return None
+
+        # Check if provider needs API key
+        provider_enum = LlmProvider.get_by_name(provider)
+        if not provider_enum:
+            return None
+
+        # Get API key if required
+        api_key = None
+        if provider_enum.requires_api_key:
+            api_key = self._config.get_api_key(provider)
+            if not api_key:
+                console.print(
+                    f"[red]No API key configured for {provider_enum.display_name}[/red]"
+                )
+                return None
+
+        config = LlmConfig(api_key=api_key)
+
+        try:
+            return service_class(config)
+        except Exception as e:
+            console.print(f"[red]Failed to create LLM service: {e}[/red]")
+            return None
+
+    def _determine_model(
+        self,
+        provider: str,
+        requested_model: Optional[str],
+        available_models: Dict[str, Type[LlmService]],
+    ) -> Optional[str]:
+        """Determine which model to use based on request and preferences."""
+        if requested_model and requested_model in available_models:
+            return requested_model
+
+        # Check preferences for default model
+        prefs = self._config.get_preferences()
+        default_model = prefs.get(f"default_{provider}_model")
+        if default_model and default_model in available_models:
+            return default_model
+
+        # Otherwise, use the first available model
+        if available_models:
+            return next(iter(available_models.keys()))
+
+        return None
