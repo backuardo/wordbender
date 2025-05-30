@@ -20,43 +20,40 @@ class PasswordWordlistGenerator(WordlistGenerator):
         """Return the default output path for password wordlists"""
         return Path("password_base_wordlist.txt")
 
+    def _get_system_prompt(self) -> str:
+        """Return the system prompt for password base word generation"""
+        return dedent(
+            """\
+            You are an expert in generating base wordlists for password cracking.
 
-def _get_system_prompt(self) -> str:
-    """Return the system prompt for password base word generation"""
-    return dedent(
-        """\
-        You are an expert in generating base wordlists for password cracking.
+            Given these seed words: {seed_words}
 
-        Given these seed words: {seed_words}
+            Generate exactly {wordlist_length} base words that could be used with
+            mutation rules in tools like Hashcat.
 
-        Generate exactly {wordlist_length} base words that could be used with
-        mutation rules in tools like Hashcat.
+            Focus on:
+            - Words semantically related to the seeds (synonyms, associated concepts)
+            - Common variations in spelling (color/colour, center/centre)
+            - Related proper nouns (brands, locations, cultural references)
+            - Compound words using the seeds
+            - Industry or context-specific terminology
+            - Pop culture references related to the seeds
 
-        Focus on:
-        - Words semantically related to the seeds (synonyms, associated concepts)
-        - Common variations in spelling (color/colour, center/centre)
-        - Related proper nouns (brands, locations, cultural references)
-        - Compound words using the seeds
-        - Industry or context-specific terminology
-        - Pop culture references related to the seeds
-
-        Output ONLY alphanumeric base words, one per line.
-        Do NOT include:
-        - Special characters or numbers (Hashcat will handle mutations)
-        - Explanations or categories
-        - Duplicate words
-        - Very short (less than 3 chars) or very long (over 30 chars) words\
-    """
-    )
+            Output ONLY alphanumeric base words, one per line.
+            Do NOT include:
+            - Special characters or numbers (Hashcat will handle mutations)
+            - Explanations or categories
+            - Duplicate words
+            - Very short (less than 3 chars) or very long (over 30 chars) words\
+            """
+        )
 
     def _validate_word(self, word: str) -> bool:
         """Validate a single word for password wordlist inclusion"""
         if not word:
             return False
 
-        # Check length constraints
         if len(word) < self.MIN_LENGTH or len(word) > self.MAX_LENGTH:
             return False
 
-        # Only allow alphanumeric characters
         return bool(self.VALID_CHARS_PATTERN.match(word))

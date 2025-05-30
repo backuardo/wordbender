@@ -10,7 +10,7 @@ class LlmProvider(Enum):
     # Format: (internal_name, display_name, env_var_name)
     OPEN_AI = ("openai", "OpenAI", "OPENAI_API_KEY")
     ANTHROPIC = ("anthropic", "Anthropic", "ANTHROPIC_API_KEY")
-    LOCAL = ("local", "Local", None)  # No API key needed
+    LOCAL = ("local", "Local", None)
     OPEN_ROUTER = ("openrouter", "OpenRouter", "OPENROUTER_API_KEY")
     CUSTOM = ("custom", "Custom", "CUSTOM_API_KEY")
 
@@ -90,24 +90,22 @@ class LlmService(ABC):
 
     def generate_words(self, prompt: str, expected_count: int) -> List[str]:
         """Generate a list of words from the LLM."""
-        # Estimate tokens needed (rough heuristic: 1.5 tokens per word + prompt)
-        estimated_tokens = int(expected_count * 1.5) + 100
+        prompt_tokens = len(prompt.split()) * 1.5
+        output_tokens = expected_count * 2
+        estimated_tokens = int(prompt_tokens + output_tokens) + 50
+        max_allowed_tokens = 4000
+        estimated_tokens = min(estimated_tokens, max_allowed_tokens)
 
         raw_response = self._call_api(prompt, estimated_tokens)
         return self._parse_word_list(raw_response)
 
     def _parse_word_list(self, response: str) -> List[str]:
         """Parse the LLM response into a list of words."""
-        # Split by newlines and filter out empty lines
         words = [line.strip() for line in response.strip().split("\n") if line.strip()]
-
-        # Remove common LLM artifacts
         filtered_words = []
         for word in words:
-            # Skip lines that look like explanations or categories
             if any(char in word for char in [":", "(", ")", "[", "]", "->"]):
                 continue
-            # Skip lines with multiple words (unless hyphenated)
             if " " in word and "-" not in word:
                 continue
             filtered_words.append(word)

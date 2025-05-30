@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Type
 
@@ -28,19 +29,14 @@ class ServiceDiscovery:
             module_name = file_path.stem
 
             try:
-                # Import the module
                 module = importlib.import_module(f"wordlist_generators.{module_name}")
 
-                # Find all WordlistGenerator subclasses in the module
                 for name, obj in inspect.getmembers(module):
                     if (
                         inspect.isclass(obj)
                         and issubclass(obj, WordlistGenerator)
                         and obj != WordlistGenerator
                     ):
-
-                        # Extract the generator type from class name
-                        # e.g., "PasswordWordlistGenerator" -> "password"
                         generator_type = name.replace("WordlistGenerator", "").lower()
                         generators[generator_type] = obj
 
@@ -61,24 +57,20 @@ class ServiceDiscovery:
             return services
 
         for file_path in service_dir.glob("*_llm_service.py"):
-            if file_path.stem == "llm_service":  # Skip the ABC
+            if file_path.stem == "llm_service":
                 continue
 
             module_name = file_path.stem
 
             try:
-                # Import the module
                 module = importlib.import_module(f"llm_services.{module_name}")
 
-                # Find all LlmService subclasses in the module
                 for name, obj in inspect.getmembers(module):
                     if (
                         inspect.isclass(obj)
                         and issubclass(obj, LlmService)
                         and obj != LlmService
                     ):
-
-                        # Get provider from class
                         provider_name = ServiceDiscovery._get_provider_name(obj)
                         if provider_name:
                             if provider_name not in services:
@@ -98,12 +90,10 @@ class ServiceDiscovery:
     def _get_provider_name(service_class: Type[LlmService]) -> Optional[str]:
         """Get provider name from service class by instantiating it."""
         try:
-            # Create a dummy config for inspection
             dummy_config = LlmConfig(api_key="dummy")
             instance = service_class(dummy_config)
             return instance.provider.internal_name
         except Exception:
-            # If instantiation fails, try to infer from class name
             class_name = service_class.__name__.lower()
             for provider in LlmProvider:
                 if provider.internal_name in class_name:
@@ -113,17 +103,24 @@ class ServiceDiscovery:
     @staticmethod
     def _extract_model_name(class_name: str) -> str:
         """Extract model name from class name."""
-        # Remove common suffixes
         name = class_name.replace("LlmService", "")
 
-        # Remove provider prefixes
-        for prefix in ["OpenRouter", "Anthropic", "OpenAI", "Local"]:
+        for prefix in [
+            "OpenRouter",
+            "Anthropic",
+            "OpenAI",
+            "Local",
+            "Groq",
+            "Cohere",
+            "Google",
+        ]:
             name = name.replace(prefix, "")
 
-        # Convert to lowercase with hyphens
-        import re
-
+        name = name.replace("Gpt", "GPT-")
+        name = name.replace("Claude", "claude-")
         name = re.sub("([a-z0-9])([A-Z])", r"\1-\2", name)
+        name = re.sub("([A-Z]+)([A-Z][a-z])", r"\1-\2", name)
+
         return name.lower().strip("-")
 
 
@@ -179,7 +176,6 @@ class LlmServiceFactory:
         if not provider_services:
             return None
 
-        # Determine which model to use
         model_to_use = self._determine_model(provider, model, provider_services)
         if not model_to_use:
             return None
@@ -188,12 +184,10 @@ class LlmServiceFactory:
         if not service_class:
             return None
 
-        # Check if provider needs API key
         provider_enum = LlmProvider.get_by_name(provider)
         if not provider_enum:
             return None
 
-        # Get API key if required
         api_key = None
         if provider_enum.requires_api_key:
             api_key = self._config.get_api_key(provider)
@@ -221,13 +215,11 @@ class LlmServiceFactory:
         if requested_model and requested_model in available_models:
             return requested_model
 
-        # Check preferences for default model
         prefs = self._config.get_preferences()
         default_model = prefs.get(f"default_{provider}_model")
         if default_model and default_model in available_models:
             return default_model
 
-        # Otherwise, use the first available model
         if available_models:
             return next(iter(available_models.keys()))
 

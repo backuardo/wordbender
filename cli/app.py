@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -38,10 +39,16 @@ version {__version__}
 class WordbenderApp:
     """Main CLI application controller."""
 
-    def __init__(self):
+    def __init__(self, log_level: Optional[str] = None):
         self.config = Config()
         self.generator_factory = GeneratorFactory()
         self.llm_factory = LlmServiceFactory(self.config)
+        if log_level:
+            logging.basicConfig(
+                level=getattr(logging, log_level.upper()),
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            )
+        self.logger = logging.getLogger(__name__)
 
     @staticmethod
     def display_banner():
@@ -68,7 +75,6 @@ class WordbenderApp:
         options: Dict,
     ) -> bool:
         """Generate a wordlist with the given parameters."""
-        # Configure generator
         for word in seed_words:
             generator.add_seed_words(word)
 
@@ -80,18 +86,25 @@ class WordbenderApp:
         if "output_file" in options:
             generator.output_file = options["output_file"]
 
-        # Generate with progress indicator
-        with yaspin(text="Generating wordlist...", color="cyan") as spinner:
+        with yaspin(text="Contacting LLM service...", color="cyan") as spinner:
             try:
+                spinner.text = "Generating wordlist..."
                 words = generator.generate(llm_service)
                 spinner.ok("✓")
                 console.print(f"[green]Generated {len(words)} unique words[/green]")
+
+                if len(words) <= 20:
+                    console.print("\n[dim]Sample words:[/dim]")
+                    for word in words[:5]:
+                        console.print(f"  • {word}")
+                    if len(words) > 5:
+                        console.print("  ...")
+
             except Exception as e:
                 spinner.fail("✗")
                 console.print(f"[red]Generation failed: {e}[/red]")
                 return False
 
-        # Save the wordlist
         try:
             generator.save(append=options.get("append", False))
             console.print(f"[green]✓ Saved to: {generator.output_file}[/green]")
@@ -111,26 +124,21 @@ class WordbenderApp:
             self.config, self.generator_factory, self.llm_factory
         )
 
-        # Select wordlist type
         wordlist_type = session.select_wordlist_type()
         if not wordlist_type:
             return
 
-        # Get seed words
         seed_words = session.get_seed_words()
         if not seed_words:
             return
 
-        # Get options
         options = session.get_generation_options()
 
-        # Create generator
         generator = self.generator_factory.create(wordlist_type)
         if not generator:
             console.print(f"[red]Failed to create {wordlist_type} generator[/red]")
             return
 
-        # Select LLM service
         service_selection = session.select_llm_service()
         if not service_selection:
             return
@@ -141,12 +149,10 @@ class WordbenderApp:
             console.print("[red]Failed to create LLM service[/red]")
             return
 
-        # Show summary
         self._display_generation_summary(
             wordlist_type, seed_words, options, provider, model
         )
 
-        # Confirm and generate
         if session.confirm_generation():
             self.generate_wordlist(generator, llm_service, seed_words, options)
 
@@ -165,7 +171,6 @@ class WordbenderApp:
         table.add_row("Seeds:", ", ".join(seed_words))
         table.add_row("Length:", str(options.get("length", 100)))
 
-        # Get provider display name safely
         provider_enum = LlmProvider.get_by_name(provider)
         provider_display = provider_enum.display_name if provider_enum else provider
         table.add_row("Provider:", provider_display)

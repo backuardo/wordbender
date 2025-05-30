@@ -1,6 +1,8 @@
+import time
 from typing import Any, Dict
 
 import requests
+from requests.exceptions import HTTPError, RequestException
 
 from llm_services.llm_service import LlmConfig, LlmProvider, LlmService
 
@@ -9,7 +11,6 @@ class OpenRouterLlmService(LlmService):
     """Base class for OpenRouter LLM services."""
 
     def __init__(self, config: LlmConfig):
-        # Set default OpenRouter API URL if not provided
         if not config.api_url:
             config.api_url = "https://openrouter.ai/api/v1/chat/completions"
         super().__init__(config)
@@ -20,6 +21,9 @@ class OpenRouterLlmService(LlmService):
 
     def _call_api(self, prompt: str, max_tokens: int) -> str:
         """Call the OpenRouter API."""
+        if not self._config.api_url:
+            raise RuntimeError("API URL is not configured")
+
         additional_params: Dict[str, Any] = self._config.additional_params or {}
         headers = {
             "Authorization": f"Bearer {self._config.api_key}",
@@ -34,20 +38,51 @@ class OpenRouterLlmService(LlmService):
             "temperature": 0.7,
         }
 
-        try:
-            # api_url is guaranteed to be not None
-            assert self._config.api_url is not None
+        max_retries = self._config.max_retries
+        retry_delay = 1.0
 
-            response = requests.post(
-                self._config.api_url,
-                json=payload,
-                headers=headers,
-                timeout=self._config.timeout,
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
-        except Exception as e:
-            raise RuntimeError(f"OpenRouter API call failed: {e}")
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    self._config.api_url,
+                    json=payload,
+                    headers=headers,
+                    timeout=self._config.timeout,
+                )
+                response.raise_for_status()
+
+                data = response.json()
+                if "choices" not in data or not data["choices"]:
+                    raise RuntimeError("Invalid response format from OpenRouter API")
+
+                content = data["choices"][0].get("message", {}).get("content", "")
+                if not content:
+                    raise RuntimeError("Empty response from OpenRouter API")
+
+                return content
+
+            except HTTPError as e:
+                if e.response and e.response.status_code == 429:  # Rate limited
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        raise RuntimeError(
+                            f"OpenRouter API rate limit exceeded after {
+                                max_retries
+                            } attempts"
+                        )
+                else:
+                    raise RuntimeError(f"OpenRouter API HTTP error: {e}")
+
+            except RequestException as e:
+                raise RuntimeError(f"OpenRouter API request failed: {e}")
+
+            except Exception as e:
+                raise RuntimeError(f"Unexpected error calling OpenRouter API: {e}")
+
+        raise RuntimeError(f"Failed to get response after {max_retries} attempts")
 
 
 class OpenRouterClaudeOpusLlmService(OpenRouterLlmService):

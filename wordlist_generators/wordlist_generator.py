@@ -105,7 +105,6 @@ class WordlistGenerator(ABC):
         prompt = self.build_prompt()
         raw_words = llm_service.generate_words(prompt, self._wordlist_length)
 
-        # Filter and deduplicate
         self._generated_words = self._process_generated_words(raw_words)
         return self.generated_words
 

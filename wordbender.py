@@ -18,7 +18,6 @@ def cli(ctx):
         app.run_interactive_session()
 
 
-# Register commands
 cli.add_command(config_cmd)
 cli.add_command(generate_cmd)
 cli.add_command(batch_cmd)

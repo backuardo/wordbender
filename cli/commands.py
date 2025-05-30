@@ -59,7 +59,6 @@ def generate_cmd(
     generator_factory = GeneratorFactory()
     llm_factory = LlmServiceFactory(app.config)
 
-    # Validate wordlist type
     if wordlist_type not in generator_factory.available_types:
         console.print(f"[red]Unknown wordlist type: {wordlist_type}[/red]")
         console.print(
@@ -67,14 +66,12 @@ def generate_cmd(
         )
         sys.exit(1)
 
-    # Create generator
     generator = generator_factory.create(
         wordlist_type, Path(output) if output else None
     )
     if not generator:
         sys.exit(1)
 
-    # Create LLM service
     provider_name = app.config.select_provider(provider)
     if not provider_name:
         sys.exit(1)
@@ -83,7 +80,6 @@ def generate_cmd(
     if not llm_service:
         sys.exit(1)
 
-    # Display info
     console.print(f"\n[bold]Generating {wordlist_type} wordlist...[/bold]")
     console.print(f"Seeds: {', '.join(seed)}")
     console.print(f"Provider: {provider_name}")
@@ -91,7 +87,6 @@ def generate_cmd(
         console.print(f"Model: {model}")
     console.print()
 
-    # Generate
     options = {
         "length": length,
         "append": append,
@@ -142,7 +137,6 @@ class BatchProcessor:
         batch_size: int,
     ):
         """Process a batch of seed words."""
-        # Validate inputs
         seed_words = self._load_seed_words(input_file)
         if not seed_words:
             return
@@ -156,12 +150,10 @@ class BatchProcessor:
 
         console.print(f"[bold]Found {len(seed_words)} seed words[/bold]")
 
-        # Process batches
         all_words = self._process_all_batches(
             seed_words, wordlist_type, length, provider_name, batch_size
         )
 
-        # Save results
         if all_words:
             output_path = output or Path(f"{wordlist_type}_batch_wordlist.txt")
             self._save_results(all_words, output_path)
@@ -231,31 +223,35 @@ class BatchProcessor:
     ) -> List[str]:
         """Process a single batch of seed words."""
         try:
-            # Create generator
             generator = self.generator_factory.create(wordlist_type)
             if not generator:
                 return []
 
             generator.wordlist_length = length
 
-            # Create LLM service
             llm_service = self.llm_factory.create(provider_name)
             if not llm_service:
                 return []
 
-            # Add seed words and generate
             for word in batch:
                 generator.add_seed_words(word)
 
             return generator.generate(llm_service)
 
+        except ValueError as e:
+            console.print(f"[yellow]Warning: Invalid input in batch: {e}[/yellow]")
+            return []
+        except RuntimeError as e:
+            console.print(f"[yellow]Warning: LLM service error: {e}[/yellow]")
+            return []
         except Exception as e:
-            console.print(f"[yellow]Warning: Batch failed: {e}[/yellow]")
+            console.print(
+                f"[yellow]Warning: Unexpected error: {type(e).__name__}: {e}[/yellow]"
+            )
             return []
 
     def _save_results(self, words: List[str], output_path: Path):
         """Save the combined results."""
-        # Deduplicate while preserving order
         unique_words = list(dict.fromkeys(words))
 
         try:
@@ -277,13 +273,11 @@ def _run_setup_wizard(config: Config):
     """Run the interactive setup wizard."""
     console.print("[bold]Wordbender Setup Wizard[/bold]\n")
 
-    # Create example env if needed
     if not Path(".env").exists():
         config.create_example_env()
         console.print("[green]✓[/green] Created .env.example file")
         console.print("Copy it to .env and add your API keys\n")
 
-    # Interactive setup for each provider
     for provider_enum in LlmProvider.requiring_api_keys():
         current_key = config.get_api_key(provider_enum.internal_name)
 
@@ -309,7 +303,6 @@ def _show_configuration(config: Config):
     """Display current configuration."""
     console.print("[bold]Current Configuration:[/bold]\n")
 
-    # Show providers
     table = Table("Provider", "Status", "Environment Variable")
     for provider_enum in LlmProvider:
         if provider_enum.requires_api_key:
@@ -328,7 +321,6 @@ def _show_configuration(config: Config):
 
     console.print(table)
 
-    # Show preferences
     console.print("\n[bold]Preferences:[/bold]")
     prefs = config.get_preferences()
     pref_table = Table(show_header=False)

@@ -41,7 +41,6 @@ class InteractiveSession:
 
         console.print(table)
 
-        # Create completer with valid choices
         valid_choices = [str(i) for i in range(1, len(available_types) + 1)]
         choice = prompt("\nChoice: ", completer=WordCompleter(valid_choices))
 
@@ -83,23 +82,33 @@ class InteractiveSession:
             "\n[bold]Additional options:[/bold] [dim](press Enter for defaults)[/dim]"
         )
 
-        # Wordlist length
-        length_input = prompt("Wordlist length [100]: ").strip()
-        options["length"] = int(length_input) if length_input.isdigit() else 100
+        while True:
+            length_input = prompt("Wordlist length [100]: ").strip()
+            if not length_input:
+                options["length"] = 100
+                break
+            elif length_input.isdigit():
+                length = int(length_input)
+                if 1 <= length <= 10000:
+                    options["length"] = length
+                    break
+                else:
+                    console.print(
+                        "[yellow]Please enter a value between 1 and 10000[/yellow]"
+                    )
+            else:
+                console.print("[yellow]Please enter a valid number[/yellow]")
 
-        # Additional instructions
         instructions = prompt("Additional instructions (optional): ").strip()
         if instructions:
             options["instructions"] = instructions
 
-        # Output file
         output_file = prompt("Output file [auto]: ").strip()
         if output_file:
             from pathlib import Path
 
             options["output_file"] = Path(output_file)
 
-        # Append mode
         append_input = prompt("Append to file? [y/N]: ").strip().lower()
         options["append"] = append_input in ["y", "yes"]
 
@@ -107,7 +116,6 @@ class InteractiveSession:
 
     def select_llm_service(self) -> Optional[Tuple[str, Optional[str]]]:
         """Select LLM provider and model."""
-        # Get providers that are configured
         available_providers = []
 
         for provider_name in self.llm_factory.available_providers:
@@ -115,7 +123,6 @@ class InteractiveSession:
             if not provider_enum:
                 continue
 
-            # Check if provider is configured (has API key if required)
             if provider_enum.requires_api_key:
                 if self.config.get_api_key(provider_name):
                     available_providers.append(provider_name)
@@ -126,12 +133,10 @@ class InteractiveSession:
             console.print("[red]No configured LLM providers found![/red]")
             return None
 
-        # Select provider
         provider = self._select_provider(available_providers)
         if not provider:
             return None
 
-        # Select model
         models = self.llm_factory.get_available_models(provider)
         if len(models) > 1:
             model = self._select_model(provider, models)
@@ -143,7 +148,6 @@ class InteractiveSession:
 
     def _select_provider(self, available_providers: List[str]) -> Optional[str]:
         """Select a provider from available ones."""
-        # Check for default preference
         prefs = self.config.get_preferences()
         default_provider = prefs.get("default_provider")
 
@@ -152,7 +156,6 @@ class InteractiveSession:
         elif len(available_providers) == 1:
             return available_providers[0]
 
-        # Let user choose
         console.print("\n[bold]Select LLM provider:[/bold]")
         table = Table(show_header=False, box=None)
 
