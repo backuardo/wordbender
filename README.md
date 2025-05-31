@@ -328,11 +328,3 @@ uv run flake8 .     # Run linter
    - `provider` property
    - `_call_api()` method
 4. Add the provider to `LlmProvider` enum if needed
-
-## License
-
-[TODO]
-
-## Contributing
-
-[TODO]
