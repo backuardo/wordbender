@@ -9,5 +9,12 @@ wheels/
 # Virtual environments
 .venv
 
-# Dev tools
+# Environment variables
+*.env
+
+# Wordlists
+*.txt
+
+# Dev
 CLAUDE.md
+TODO.md
