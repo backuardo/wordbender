@@ -46,7 +46,7 @@ uv sync
 3. Create a `.env` file with your API keys:
 ```bash
 # This will create a .env.example file
-uv run python wordbender.py config --setup
+uv run wordbender.py config --setup
 
 # Copy the example file and add your keys
 cp .env.example .env
@@ -78,7 +78,7 @@ CUSTOM_API_KEY=
 The easiest way to use Wordbender is through interactive mode:
 
 ```bash
-uv run python wordbender.py
+uv run wordbender.py
 ```
 
 This will:
@@ -95,16 +95,16 @@ Generate wordlists directly from the command line:
 
 ```bash
 # Generate password wordlist with specific seeds
-uv run python wordbender.py generate password -s john -s smith -s acme -l 200
+uv run wordbender.py generate password -s john -s smith -s acme -l 200
 
 # Generate subdomain wordlist
-uv run python wordbender.py generate subdomain -s google -s tech -l 100
+uv run wordbender.py generate subdomain -s google -s tech -l 100
 
 # Specify output file
-uv run python wordbender.py generate password -s admin -o custom_passwords.txt
+uv run wordbender.py generate password -s admin -o custom_passwords.txt
 
 # Append to existing file
-uv run python wordbender.py generate subdomain -s api -s dev -o subdomains.txt --append
+uv run wordbender.py generate subdomain -s api -s dev -o subdomains.txt --append
 ```
 
 ### Batch Processing
@@ -121,30 +121,30 @@ amazon
 EOF
 
 # Generate wordlists for each seed
-uv run python wordbender.py batch seeds.txt subdomain
+uv run wordbender.py batch seeds.txt subdomain
 
 # With custom options
-uv run python wordbender.py batch seeds.txt password -l 150 -o batch_output.txt
+uv run wordbender.py batch seeds.txt password -l 150 -o batch_output.txt
 ```
 
 ### Configuration Management
 
 ```bash
 # Show current configuration
-uv run python wordbender.py config --show
+uv run wordbender.py config --show
 
 # Run setup wizard (interactive configuration)
-uv run python wordbender.py config --setup
+uv run wordbender.py config --setup
 
 # Set a specific API key
-uv run python wordbender.py config --set-key anthropic YOUR_API_KEY
+uv run wordbender.py config --set-key anthropic YOUR_API_KEY
 
 # Set default preferences
-uv run python wordbender.py config --set-preference default_provider anthropic
-uv run python wordbender.py config --set-preference default_wordlist_length 150
+uv run wordbender.py config --set-preference default_provider anthropic
+uv run wordbender.py config --set-preference default_wordlist_length 150
 
 # Reset all preferences to defaults
-uv run python wordbender.py config --reset
+uv run wordbender.py config --reset
 ```
 
 ## Wordlist Types
@@ -185,7 +185,7 @@ uv run python wordbender.py config --reset
 
 ### Generate Command
 ```bash
-uv run python wordbender.py generate [OPTIONS] WORDLIST_TYPE
+uv run wordbender.py generate [OPTIONS] WORDLIST_TYPE
 ```
 
 Options:
@@ -199,7 +199,7 @@ Options:
 
 ### Batch Command
 ```bash
-uv run python wordbender.py batch [OPTIONS] SEED_FILE WORDLIST_TYPE
+uv run wordbender.py batch [OPTIONS] SEED_FILE WORDLIST_TYPE
 ```
 
 Options:
@@ -210,7 +210,7 @@ Options:
 
 ### Config Command
 ```bash
-uv run python wordbender.py config [OPTIONS]
+uv run wordbender.py config [OPTIONS]
 ```
 
 Options:
@@ -229,7 +229,7 @@ Options:
 
 2. **Generate password base wordlist**:
 ```bash
-uv run python wordbender.py generate password \
+uv run wordbender.py generate password \
   -s johnsmith -s acmecorp -s chicago -s bears -s fluffy \
   -l 500 -o acme_passwords.txt
 ```
@@ -245,7 +245,7 @@ hashcat -a 6 -m 1000 hashes.txt acme_passwords.txt ?d?d?d?d
 
 4. **Generate subdomain wordlist**:
 ```bash
-uv run python wordbender.py generate subdomain \
+uv run wordbender.py generate subdomain \
   -s acme -s corp -s prod -s staging -s api \
   -l 200 -o acme_subdomains.txt
 ```
@@ -263,15 +263,15 @@ ffuf -u https://FUZZ.acmecorp.com -w acme_subdomains.txt
 
 ```bash
 # Use Anthropic directly with Claude 3.5 Sonnet
-uv run python wordbender.py generate password \
+uv run wordbender.py generate password \
   -s admin -p anthropic -m claude-3-5-sonnet-20241022
 
 # Use OpenRouter with GPT-4
-uv run python wordbender.py generate subdomain \
+uv run wordbender.py generate subdomain \
   -s api -p openrouter -m openai/gpt-4-turbo-preview
 
 # Interactive mode will show all available providers and models
-uv run python wordbender.py
+uv run wordbender.py
 ```
 
 ## Troubleshooting
@@ -296,6 +296,47 @@ Each wordlist type has specific validation rules:
 Words that don't meet criteria are automatically filtered out.
 
 ## Development
+
+### Running Tests
+
+```bash
+# Install test dependencies
+uv sync --group test
+
+# Run all tests
+uv run pytest
+
+# Run unit tests only
+uv run pytest tests/unit
+
+# Run integration tests only
+uv run pytest tests/integration
+
+# Run tests with coverage report
+uv run pytest --cov
+
+# Run tests in verbose mode
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/unit/test_config.py
+
+# Run tests matching a pattern
+uv run pytest -k "test_password"
+```
+
+### Test Structure
+
+The test suite is organized into:
+- **Unit Tests** (`tests/unit/`): Test individual components in isolation
+  - Configuration management
+  - Wordlist generators
+  - LLM services
+  - Factory implementations
+- **Integration Tests** (`tests/integration/`): Test complete workflows
+  - End-to-end generation flows
+  - Configuration and API key management
+  - Batch processing
 
 ### Running Development Tools
 

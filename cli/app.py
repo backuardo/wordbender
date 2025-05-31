@@ -55,7 +55,8 @@ class WordbenderApp:
         """Display the application banner."""
         console.print(Panel(Text(BANNER, style="bold cyan"), border_style="cyan"))
         console.print(
-            "An LLM-powered targeted wordlist generator for penetration testing and security assessments.", style="dim"
+            "An LLM-powered targeted wordlist generator for penetration testing and security assessments.",
+            style="dim",
         )
         console.print()
 

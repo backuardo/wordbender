@@ -169,7 +169,7 @@ class Config:
             ]
         )
 
-        example_file = self._env_file.with_suffix(".env.example")
+        example_file = self._env_file.parent / ".env.example"
         with open(example_file, "w") as f:
             f.write("\n".join(lines))
 
