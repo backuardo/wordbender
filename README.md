@@ -1,14 +1,26 @@
+![Wordbender Banner](banner.png)
+
 # Wordbender
 
-An LLM-powered targeted wordlist generator for penetration testing and security assessments. Wordbender uses AI language models to generate contextually relevant wordlists based on seed words you provide.
+An LLM-powered targeted wordlist generator that creates base wordlists for password cracking and subdomain enumeration tools. Wordbender uses AI language models to generate contextually relevant seed words that are then fed into tools like Hashcat, Gobuster, or ffuf.
+
+## What This Tool Does
+
+Wordbender **does not** crack passwords or discover subdomains directly. Instead, it generates intelligent wordlists based on your input that serve as input for other security tools:
+
+- **For Password Cracking**: Generates base words that Hashcat will mutate with rules (adding numbers, special characters, capitalization patterns)
+- **For Subdomain Discovery**: Creates potential subdomain names that tools like Gobuster will test against DNS servers
+
+Think of Wordbender as the "smart wordlist creator" that understands context and relationships, making your other tools more effective.
 
 ## Features
 
 - **Multiple Wordlist Types**: Generate password base words or subdomain names
-- **AI-Powered**: Uses Claude, GPT-4, and other models for intelligent word generation
-- **Multiple Providers**: Supports Anthropic (direct), OpenRouter, and other LLM providers
-- **Flexible Operation Modes**: Interactive CLI, direct generation, or batch processing
-- **Smart Validation**: Ensures generated words meet specific criteria for each wordlist type
+- **AI-Powered Context Understanding**: Uses Claude, GPT-4, and other models to understand relationships between seed words
+- **Smart Word Generation**: Creates semantically related words, variations, and compounds based on your input
+- **Tool-Ready Output**: Generates wordlists in formats directly usable by Hashcat, Gobuster, ffuf, and other tools
+- **Flexible Operation Modes**: Interactive CLI with helpful prompts, direct generation, or batch processing
+- **Validation for Tool Compatibility**: Ensures generated words meet the requirements of target tools
 - **Extensible**: Easy to add new wordlist types or LLM providers
 
 ## Installation
@@ -138,16 +150,18 @@ uv run python wordbender.py config --reset
 ## Wordlist Types
 
 ### Password Wordlists
-- Generates base words for password mutation tools (like Hashcat)
-- Focuses on alphanumeric words (3-30 characters)
-- Includes semantically related words, variations, and compound words
-- Output: `password_base_wordlist.txt`
+- **Purpose**: Generate base words that Hashcat will mutate into thousands of password variations
+- **What it creates**: Clean, alphanumeric base words (3-30 characters) without numbers or special characters
+- **How it's used**: Fed into Hashcat with rule files that add numbers, symbols, and capitalization patterns
+- **Example flow**: "john" → Hashcat rules → "John123!", "j0hn@2023", "JOHN_98", etc.
+- **Output**: `password_base_wordlist.txt`
 
 ### Subdomain Wordlists
-- Generates potential subdomain names for enumeration
-- Creates DNS-compliant labels (lowercase, alphanumeric with hyphens)
-- Includes common patterns, department names, and service indicators
-- Output: `subdomain_wordlist.txt`
+- **Purpose**: Generate potential subdomain names for DNS enumeration tools
+- **What it creates**: DNS-compliant labels (lowercase, alphanumeric with hyphens)
+- **How it's used**: Fed into tools like Gobuster or ffuf that test each word against the target domain
+- **Example flow**: "api-staging" → Gobuster → tests "api-staging.target.com"
+- **Output**: `subdomain_wordlist.txt`
 
 ## Supported LLM Providers and Models
 
@@ -208,36 +222,42 @@ Options:
 
 ## Examples
 
-### Security Assessment Workflow
+### Complete Security Assessment Workflow
 
-1. Generate password wordlist for a company:
+1. **Gather target information** (reconnaissance phase):
+   - Personal details, company info, technologies used, etc.
+
+2. **Generate password base wordlist**:
 ```bash
 uv run python wordbender.py generate password \
-  -s acmecorp -s acme -s 2024 -s enterprise \
+  -s johnsmith -s acmecorp -s chicago -s bears -s fluffy \
   -l 500 -o acme_passwords.txt
 ```
 
-2. Generate subdomain wordlist:
+3. **Feed into Hashcat for password cracking**:
+```bash
+# Crack NTLM hashes with word mutations
+hashcat -a 0 -m 1000 hashes.txt acme_passwords.txt -r rules/best64.rule
+
+# Hybrid attack with 4-digit years
+hashcat -a 6 -m 1000 hashes.txt acme_passwords.txt ?d?d?d?d
+```
+
+4. **Generate subdomain wordlist**:
 ```bash
 uv run python wordbender.py generate subdomain \
-  -s acme -s corp -s internal \
+  -s acme -s corp -s prod -s staging -s api \
   -l 200 -o acme_subdomains.txt
 ```
 
-3. Batch process multiple targets:
+5. **Feed into subdomain enumeration tools**:
 ```bash
-cat > targets.txt << EOF
-facebook
-twitter
-linkedin
-instagram
-EOF
+# DNS enumeration with Gobuster
+gobuster dns -d acmecorp.com -w acme_subdomains.txt -t 50
 
-uv run python wordbender.py batch targets.txt subdomain \
-  -l 100 -o social_media_subdomains.txt
+# HTTP/HTTPS enumeration with ffuf
+ffuf -u https://FUZZ.acmecorp.com -w acme_subdomains.txt
 ```
-
-4. Generate mutations with Hashcat (or similar)
 
 ### Using Different Providers
 
