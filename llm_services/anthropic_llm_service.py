@@ -201,3 +201,19 @@ class AnthropicClaude35HaikuLlmService(AnthropicLlmService):
     @property
     def model_name(self) -> str:
         return "claude-3-5-haiku-20241022"
+
+
+class AnthropicClaudeOpus4LlmService(AnthropicLlmService):
+    """Claude Opus 4 via Anthropic API."""
+
+    @property
+    def model_name(self) -> str:
+        return "claude-opus-4-20250514"
+
+
+class AnthropicClaudeSonnet4LlmService(AnthropicLlmService):
+    """Claude Sonnet 4 via Anthropic API."""
+
+    @property
+    def model_name(self) -> str:
+        return "claude-sonnet-4-20250514"
