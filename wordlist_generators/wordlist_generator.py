@@ -70,12 +70,22 @@ class WordlistGenerator(ABC):
         """Validate a single word according to generator-specific rules."""
         pass
 
+    @abstractmethod
+    def get_seed_hints(self) -> str:
+        """Return hints about what seed words to provide."""
+        pass
+
+    @abstractmethod
+    def get_usage_instructions(self) -> str:
+        """Return instructions for using the generated wordlist."""
+        pass
+
     def add_seed_words(self, *words: str) -> None:
         """Add seed words to the generator."""
-        valid_words = [word for word in words if self._validate_word(word)]
-        if len(valid_words) != len(words):
-            invalid = set(words) - set(valid_words)
-            raise ValueError(f"Invalid seed words: {invalid}")
+        # Allow any non-empty seed words - they're just context for the LLM
+        valid_words = [word.strip() for word in words if word.strip()]
+        if not valid_words:
+            raise ValueError("No valid seed words provided")
         self._seed_words.extend(valid_words)
 
     def clear_seed_words(self) -> None:

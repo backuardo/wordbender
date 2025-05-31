@@ -60,25 +60,40 @@ class InteractiveSession:
             console.print(f"[red]Error: {e}[/red]")
             return None
 
-    def get_seed_words(self) -> List[str]:
+    def get_seed_words(self, generator=None) -> List[str]:
         """Get seed words from user interactively."""
         console.print("\n[bold]Enter seed words:[/bold]")
+
+        # Show hints if generator is provided
+        if generator and hasattr(generator, "get_seed_hints"):
+            console.print(f"\n[dim]{generator.get_seed_hints()}[/dim]\n")
+
         console.print(
-            "[dim]Enter words one at a time, press Enter twice when done[/dim]\n"
+            "[dim]Enter all your seed words separated by spaces or commas:[/dim]\n"
         )
 
-        seed_words = []
         while True:
-            word = prompt(f"Word {len(seed_words) + 1}: ").strip()
-            if not word:
-                if seed_words:
-                    break
+            input_text = prompt("Seed words: ").strip()
+            if not input_text:
                 console.print("[yellow]Please enter at least one seed word[/yellow]")
-            else:
-                seed_words.append(word)
-                console.print(f"[green]✓[/green] Added: {word}")
+                continue
 
-        return seed_words
+            # Split by both spaces and commas, filter empty strings
+            seed_words = []
+            for word in input_text.replace(",", " ").split():
+                word = word.strip()
+                if word:
+                    seed_words.append(word)
+
+            if seed_words:
+                console.print(f"\n[green]✓[/green] Added {len(seed_words)} seed words:")
+                for word in seed_words[:5]:  # Show first 5
+                    console.print(f"  • {word}")
+                if len(seed_words) > 5:
+                    console.print(f"  • ... and {len(seed_words) - 5} more")
+                return seed_words
+            else:
+                console.print("[yellow]No valid seed words found[/yellow]")
 
     def get_generation_options(self) -> Dict:
         """Get additional generation options from user."""

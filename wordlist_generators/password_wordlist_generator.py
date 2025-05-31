@@ -57,3 +57,44 @@ class PasswordWordlistGenerator(WordlistGenerator):
             return False
 
         return bool(self.VALID_CHARS_PATTERN.match(word))
+
+    def get_seed_hints(self) -> str:
+        """Return hints about what seed words to provide."""
+        return dedent(
+            """\
+            For effective password wordlists, provide diverse information about the
+            target:
+            • Personal info: First name, last name, nicknames, usernames
+            • Important dates: Birthdays (e.g., "May 3 1989"), anniversaries
+            • Family & pets: Spouse name, children's names, pet names
+            • Locations: Cities lived in, favorite vacation spots, birthplace
+            • Interests: Hobbies, favorite sports teams, bands, movies
+            • Work: Company name, job title, department, projects
+            • Numbers: Lucky numbers, phone area codes, zip codes
+
+            Example: john smith may31989 fluffy chicago bears accounting\
+            """
+        )
+
+    def get_usage_instructions(self) -> str:
+        """Return instructions for using the generated wordlist."""
+        return dedent(
+            """\
+            Next steps:
+            1. Feed this wordlist into a password mutation tool like Hashcat:
+               hashcat -a 0 -m <hash_type> <hash_file> password_base_wordlist.txt \\
+                 -r rules/best64.rule
+
+            2. Common Hashcat rule files to try:
+               - rules/best64.rule (good balance of mutations)
+               - rules/d3ad0ne.rule (extensive mutations)
+               - rules/dive.rule (targeted mutations)
+
+            3. You can also combine with masks for hybrid attacks:
+               hashcat -a 6 -m <hash_type> <hash_file> password_base_wordlist.txt \\
+                 ?d?d?d?d
+
+            Tip: The generated words are base words - Hashcat will create variations
+            with numbers, special characters, capitalization, etc.\
+            """
+        )

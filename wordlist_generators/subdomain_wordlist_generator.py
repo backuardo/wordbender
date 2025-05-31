@@ -68,3 +68,45 @@ class SubdomainWordlistGenerator(WordlistGenerator):
         # Convert to lowercase before processing (validation already does this)
         lowercase_words = [word.lower() for word in words]
         return super()._process_generated_words(lowercase_words)
+
+    def get_seed_hints(self) -> str:
+        """Return hints about what seed words to provide."""
+        return dedent(
+            """\
+            For effective subdomain wordlists, provide information about the
+            organization:
+            • Company: Name, abbreviations, stock ticker, brand names
+            • Industry: Sector keywords, industry-specific terms
+            • Technology: Known tech stack, platforms, services used
+            • Geographic: Office locations, regions served, country codes
+            • Products: Product names, service names, project codenames
+            • Structure: Department names, team names, business units
+            • Partners: Vendor names, client names, integration partners
+
+            Example: acmecorp acme fintech aws cloud newyork payment gateway\
+            """
+        )
+
+    def get_usage_instructions(self) -> str:
+        """Return instructions for using the generated wordlist."""
+        return dedent(
+            """\
+            Next steps:
+            1. Use with subdomain enumeration tools:
+               • gobuster: gobuster dns -d target.com -w subdomain_wordlist.txt
+               • ffuf: ffuf -u https://FUZZ.target.com -w subdomain_wordlist.txt
+               • subfinder: subfinder -d target.com -wL subdomain_wordlist.txt
+
+            2. Combine with other reconnaissance:
+               • Passive DNS data from services like SecurityTrails
+               • Certificate transparency logs
+               • Search engine dorking
+
+            3. Verify discovered subdomains:
+               • Check for wildcard DNS
+               • Probe for live hosts
+               • Screenshot interesting services
+
+            Tip: Many organizations use predictable patterns - the AI helps find these!\
+            """
+        )

@@ -116,6 +116,13 @@ class WordbenderApp:
         try:
             generator.save(append=options.get("append", False))
             console.print(f"[green]✓ Saved to: {generator.output_file}[/green]")
+
+            # Show usage instructions
+            if hasattr(generator, "get_usage_instructions"):
+                console.print(
+                    f"\n[bold cyan]{generator.get_usage_instructions()}[/bold cyan]"
+                )
+
             return True
         except Exception as e:
             console.print(f"[red]Failed to save: {e}[/red]")
@@ -136,12 +143,7 @@ class WordbenderApp:
         if not wordlist_type:
             return
 
-        seed_words = session.get_seed_words()
-        if not seed_words:
-            return
-
-        options = session.get_generation_options()
-
+        # Create generator early so we can show hints
         generator = self.generator_factory.create(wordlist_type)
         if not generator:
             console.print(f"[red]Failed to create {wordlist_type} generator[/red]")
@@ -150,6 +152,12 @@ class WordbenderApp:
                 f"{', '.join(self.generator_factory.available_types)}[/dim]"
             )
             return
+
+        seed_words = session.get_seed_words(generator)
+        if not seed_words:
+            return
+
+        options = session.get_generation_options()
 
         service_selection = session.select_llm_service()
         if not service_selection:
