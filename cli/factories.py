@@ -22,7 +22,13 @@ class ServiceDiscovery:
         generators = {}
         generator_dir = Path("wordlist_generators")
 
-        if not generator_dir.exists():
+        try:
+            if not generator_dir.exists():
+                return generators
+        except (OSError, PermissionError) as e:
+            console.print(
+                f"[yellow]Warning: Cannot access generators directory: {e}[/yellow]"
+            )
             return generators
 
         for file_path in generator_dir.glob("*_wordlist_generator.py"):
@@ -53,7 +59,13 @@ class ServiceDiscovery:
         services = {}
         service_dir = Path("llm_services")
 
-        if not service_dir.exists():
+        try:
+            if not service_dir.exists():
+                return services
+        except (OSError, PermissionError) as e:
+            console.print(
+                f"[yellow]Warning: Cannot access services directory: {e}[/yellow]"
+            )
             return services
 
         for file_path in service_dir.glob("*_llm_service.py"):
@@ -142,7 +154,13 @@ class GeneratorFactory:
         generator_class = self._generators.get(generator_type)
         if not generator_class:
             return None
-        return generator_class(output_file)
+        try:
+            return generator_class(output_file)
+        except Exception as e:
+            console.print(
+                f"[red]Failed to create {generator_type} generator: {e}[/red]"
+            )
+            return None
 
     def get_description(self, generator_type: str) -> str:
         """Get description for a generator type from its docstring."""
@@ -201,8 +219,16 @@ class LlmServiceFactory:
 
         try:
             return service_class(config)
+        except ValueError as e:
+            console.print(f"[red]Invalid configuration: {e}[/red]")
+            return None
+        except AttributeError as e:
+            console.print(f"[red]Service implementation error: {e}[/red]")
+            return None
         except Exception as e:
-            console.print(f"[red]Failed to create LLM service: {e}[/red]")
+            console.print(
+                f"[red]Failed to create LLM service: {type(e).__name__}: {e}[/red]"
+            )
             return None
 
     def _determine_model(

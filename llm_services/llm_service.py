@@ -83,6 +83,14 @@ class LlmService(ABC):
         if self.requires_api_key and not self._config.api_key:
             raise ValueError(f"{self.__class__.__name__} requires an API key")
 
+        if self._config.timeout <= 0:
+            raise ValueError(f"Timeout must be positive, got {self._config.timeout}")
+
+        if self._config.max_retries < 0:
+            raise ValueError(
+                f"Max retries must be non-negative, got {self._config.max_retries}"
+            )
+
     @abstractmethod
     def _call_api(self, prompt: str, max_tokens: int) -> str:
         """Make the API call to the LLM."""
@@ -90,24 +98,58 @@ class LlmService(ABC):
 
     def generate_words(self, prompt: str, expected_count: int) -> List[str]:
         """Generate a list of words from the LLM."""
+        # Token estimation with safety margin
         prompt_tokens = len(prompt.split()) * 1.5
-        output_tokens = expected_count * 2
-        estimated_tokens = int(prompt_tokens + output_tokens) + 50
+        # Assume average 1.5 tokens per word plus formatting
+        output_tokens = expected_count * 3
+        estimated_tokens = int(prompt_tokens + output_tokens) + 100
+
+        # Model-specific limits could be overridden in subclasses
         max_allowed_tokens = 4000
         estimated_tokens = min(estimated_tokens, max_allowed_tokens)
 
         raw_response = self._call_api(prompt, estimated_tokens)
+
+        if not raw_response or not raw_response.strip():
+            raise ValueError("LLM returned empty response")
+
         return self._parse_word_list(raw_response)
 
     def _parse_word_list(self, response: str) -> List[str]:
         """Parse the LLM response into a list of words."""
-        words = [line.strip() for line in response.strip().split("\n") if line.strip()]
+        # Split by newlines and clean up
+        lines = response.strip().split("\n")
         filtered_words = []
-        for word in words:
-            if any(char in word for char in [":", "(", ")", "[", "]", "->"]):
+
+        # Common patterns to filter out
+        skip_patterns = [
+            ":",  # Category markers
+            "(",
+            ")",  # Parenthetical notes
+            "[",
+            "]",  # Bracketed content
+            "->",  # Arrow indicators
+            "#",  # Comments
+            "*",  # Bullet points
+        ]
+
+        for line in lines:
+            word = line.strip()
+            if not word:
                 continue
+
+            # Skip lines with formatting/metadata
+            if any(char in word for char in skip_patterns):
+                continue
+
+            # Skip multi-word entries without hyphens
             if " " in word and "-" not in word:
                 continue
-            filtered_words.append(word)
+
+            # Additional cleanup: remove leading/trailing punctuation
+            word = word.strip(".,;!?'\"")
+
+            if word:  # Check again after cleanup
+                filtered_words.append(word)
 
         return filtered_words

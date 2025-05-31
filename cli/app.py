@@ -76,7 +76,10 @@ class WordbenderApp:
     ) -> bool:
         """Generate a wordlist with the given parameters."""
         for word in seed_words:
-            generator.add_seed_words(word)
+            if word and word.strip():
+                generator.add_seed_words(word.strip())
+            else:
+                console.print("[yellow]Skipping empty seed word[/yellow]")
 
         generator.wordlist_length = options.get("length", 100)
 
@@ -84,13 +87,18 @@ class WordbenderApp:
             generator.additional_instructions = options["instructions"]
 
         if "output_file" in options:
-            generator.output_file = options["output_file"]
+            output_file = options["output_file"]
+            if output_file:
+                generator.output_file = output_file
 
         with yaspin(text="Contacting LLM service...", color="cyan") as spinner:
             try:
                 spinner.text = "Generating wordlist..."
                 words = generator.generate(llm_service)
                 spinner.ok("✓")
+                if words is None:
+                    console.print("[red]No words generated[/red]")
+                    return False
                 console.print(f"[green]Generated {len(words)} unique words[/green]")
 
                 if len(words) <= 20:
@@ -137,6 +145,10 @@ class WordbenderApp:
         generator = self.generator_factory.create(wordlist_type)
         if not generator:
             console.print(f"[red]Failed to create {wordlist_type} generator[/red]")
+            console.print(
+                f"[dim]Available types: "
+                f"{', '.join(self.generator_factory.available_types)}[/dim]"
+            )
             return
 
         service_selection = session.select_llm_service()
@@ -146,7 +158,9 @@ class WordbenderApp:
         provider, model = service_selection
         llm_service = self.llm_factory.create(provider, model)
         if not llm_service:
-            console.print("[red]Failed to create LLM service[/red]")
+            console.print(f"[red]Failed to create LLM service for {provider}[/red]")
+            if model:
+                console.print(f"[dim]Model: {model}[/dim]")
             return
 
         self._display_generation_summary(

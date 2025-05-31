@@ -103,21 +103,45 @@ class WordlistGenerator(ABC):
     def generate(self, llm_service) -> List[str]:
         """Generate the wordlist using the provided LLM service."""
         prompt = self.build_prompt()
-        raw_words = llm_service.generate_words(prompt, self._wordlist_length)
+
+        try:
+            raw_words = llm_service.generate_words(prompt, self._wordlist_length)
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate words from LLM: {e}")
+
+        if not raw_words:
+            raise ValueError("LLM returned empty response")
 
         self._generated_words = self._process_generated_words(raw_words)
+
+        if not self._generated_words:
+            raise ValueError("No valid words generated after processing")
+
         return self.generated_words
 
     def _process_generated_words(self, words: List[str]) -> List[str]:
         """Process and validate generated words."""
         seen = set()
         processed = []
+        invalid_count = 0
 
         for word in words:
             word = word.strip()
-            if word and self._validate_word(word) and word not in seen:
+            if not word:
+                continue
+
+            if word in seen:
+                continue
+
+            if self._validate_word(word):
                 seen.add(word)
                 processed.append(word)
+            else:
+                invalid_count += 1
+
+        # Log validation summary
+        if invalid_count > 0:
+            print(f"Warning: {invalid_count} words failed validation")
 
         return processed
 
@@ -127,9 +151,19 @@ class WordlistGenerator(ABC):
             raise ValueError("No words have been generated")
 
         output_path = path or self._output_file
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Ensure parent directory exists with error handling
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            raise IOError(f"Failed to create directory {output_path.parent}: {e}")
 
         mode = "a" if append else "w"
-        with output_path.open(mode, encoding="utf-8") as f:
-            for word in self._generated_words:
-                f.write(f"{word}\n")
+        try:
+            with output_path.open(mode, encoding="utf-8") as f:
+                for word in self._generated_words:
+                    f.write(f"{word}\n")
+        except IOError as e:
+            raise IOError(f"Failed to write to file {output_path}: {e}")
+        except UnicodeEncodeError as e:
+            raise ValueError(f"Failed to encode word to UTF-8: {e}")

@@ -14,8 +14,12 @@ console = Console()
 def cli(ctx):
     """Wordbender - an LLM-powered targeted wordlist generator script"""
     if ctx.invoked_subcommand is None:
-        app = WordbenderApp()
-        app.run_interactive_session()
+        try:
+            app = WordbenderApp()
+            app.run_interactive_session()
+        except Exception as e:
+            console.print(f"[red]Failed to initialize application: {e}[/red]")
+            sys.exit(1)
 
 
 cli.add_command(config_cmd)

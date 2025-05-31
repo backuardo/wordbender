@@ -48,11 +48,17 @@ class InteractiveSession:
             idx = int(choice) - 1
             if 0 <= idx < len(available_types):
                 return available_types[idx]
-        except (ValueError, IndexError):
-            pass
-
-        console.print("[red]Invalid choice[/red]")
-        return None
+            else:
+                console.print(
+                    f"[red]Invalid choice: Please select 1-{len(available_types)}[/red]"
+                )
+                return None
+        except ValueError:
+            console.print(f"[red]Invalid choice: '{choice}' is not a number[/red]")
+            return None
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
+            return None
 
     def get_seed_words(self) -> List[str]:
         """Get seed words from user interactively."""
@@ -107,7 +113,17 @@ class InteractiveSession:
         if output_file:
             from pathlib import Path
 
-            options["output_file"] = Path(output_file)
+            try:
+                path = Path(output_file)
+                # Validate path is not a directory
+                if path.exists() and path.is_dir():
+                    console.print(
+                        f"[yellow]'{output_file}' is a directory, not a file[/yellow]"
+                    )
+                else:
+                    options["output_file"] = path
+            except (OSError, ValueError) as e:
+                console.print(f"[yellow]Invalid output path: {e}[/yellow]")
 
         append_input = prompt("Append to file? [y/N]: ").strip().lower()
         options["append"] = append_input in ["y", "yes"]
@@ -173,8 +189,15 @@ class InteractiveSession:
             idx = int(choice) - 1
             if 0 <= idx < len(available_providers):
                 return available_providers[idx]
+            else:
+                max_choice = len(available_providers)
+                console.print(
+                    f"[red]Invalid choice: Please select 1-{max_choice}[/red]"
+                )
         except ValueError:
-            pass
+            console.print(f"[red]Invalid choice: '{choice}' is not a number[/red]")
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
 
         return None
 
@@ -193,8 +216,14 @@ class InteractiveSession:
             idx = int(choice) - 1
             if 0 <= idx < len(models):
                 return models[idx]
+            else:
+                console.print(
+                    f"[red]Invalid choice: Please select 1-{len(models)}[/red]"
+                )
         except ValueError:
-            pass
+            console.print(f"[red]Invalid choice: '{choice}' is not a number[/red]")
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
 
         return None
 

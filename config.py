@@ -4,8 +4,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv, set_key
+from rich.console import Console
 
 from llm_services.llm_service import LlmProvider
+
+console = Console()
 
 
 class Config:
@@ -112,7 +115,11 @@ class Config:
         try:
             with open(self._config_file, "r") as f:
                 return json.load(f)
-        except Exception:
+        except json.JSONDecodeError as e:
+            console.print(f"[yellow]Warning: Invalid JSON in config file: {e}[/yellow]")
+            return self._get_default_preferences()
+        except (IOError, OSError) as e:
+            console.print(f"[yellow]Warning: Could not read config file: {e}[/yellow]")
             return self._get_default_preferences()
 
     def set_preference(self, key: str, value: Any) -> None:
@@ -120,9 +127,12 @@ class Config:
         prefs = self.get_preferences()
         prefs[key] = value
 
-        self._config_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._config_file, "w") as f:
-            json.dump(prefs, f, indent=2)
+        try:
+            self._config_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._config_file, "w") as f:
+                json.dump(prefs, f, indent=2)
+        except (IOError, OSError) as e:
+            raise RuntimeError(f"Failed to save preferences: {e}")
 
     def reset_preferences(self) -> None:
         """Reset preferences to defaults."""
@@ -195,11 +205,8 @@ class Config:
             provider = LlmProvider.get_by_name(provider_name)
             if not provider:
                 print(f"Unknown provider: {provider_name}")
-                print(
-                    f"Available providers: {
-                        ', '.join(p.internal_name for p in LlmProvider)
-                    }"
-                )
+                available = ", ".join(p.internal_name for p in LlmProvider)
+                print(f"Available providers: {available}")
                 return None
 
             if provider.requires_api_key and not self.get_api_key(provider_name):
@@ -223,4 +230,4 @@ class Config:
         if default in available:
             return default
 
-        return available[0]
+        return available[0] if available else None

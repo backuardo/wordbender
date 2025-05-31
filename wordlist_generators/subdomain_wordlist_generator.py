@@ -51,14 +51,20 @@ class SubdomainWordlistGenerator(WordlistGenerator):
         if not word:
             return False
 
-        word = word.lower()
+        # DNS labels must be lowercase
+        word_lower = word.lower()
 
-        if len(word) < self.MIN_LENGTH or len(word) > self.MAX_LENGTH:
+        if len(word_lower) < self.MIN_LENGTH or len(word_lower) > self.MAX_LENGTH:
             return False
 
-        return bool(self.VALID_CHARS_PATTERN.match(word))
+        # No consecutive hyphens
+        if "--" in word_lower:
+            return False
+
+        return bool(self.VALID_CHARS_PATTERN.match(word_lower))
 
     def _process_generated_words(self, words: List[str]) -> List[str]:
         """Process generated words, ensuring they're lowercase."""
+        # Convert to lowercase before processing (validation already does this)
         lowercase_words = [word.lower() for word in words]
         return super()._process_generated_words(lowercase_words)

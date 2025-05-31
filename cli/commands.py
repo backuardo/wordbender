@@ -161,11 +161,20 @@ class BatchProcessor:
     def _load_seed_words(self, input_file: Path) -> List[str]:
         """Load seed words from file."""
         try:
-            with open(input_file, "r") as f:
+            with open(input_file, "r", encoding="utf-8") as f:
                 seed_words = [line.strip() for line in f if line.strip()]
             if not seed_words:
                 console.print("[red]No seed words found in file[/red]")
             return seed_words
+        except FileNotFoundError:
+            console.print(f"[red]File not found: {input_file}[/red]")
+            return []
+        except PermissionError:
+            console.print(f"[red]Permission denied reading file: {input_file}[/red]")
+            return []
+        except UnicodeDecodeError:
+            console.print(f"[red]File contains invalid characters: {input_file}[/red]")
+            return []
         except Exception as e:
             console.print(f"[red]Error reading file: {e}[/red]")
             return []
@@ -210,9 +219,16 @@ class BatchProcessor:
 
             for i in range(0, len(seed_words), batch_size):
                 batch = seed_words[i : i + batch_size]
-                words = self._process_single_batch(
-                    batch, wordlist_type, length, provider_name
-                )
+                try:
+                    words = self._process_single_batch(
+                        batch, wordlist_type, length, provider_name
+                    )
+                except Exception as e:
+                    batch_num = i // batch_size + 1
+                    console.print(
+                        f"[yellow]Warning: Batch {batch_num} failed: {e}[/yellow]"
+                    )
+                    words = []
                 all_words.extend(words)
                 progress.update(task_id, advance=len(batch))
 
@@ -256,7 +272,17 @@ class BatchProcessor:
 
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w") as f:
+        except PermissionError:
+            console.print(
+                f"[red]Permission denied creating directory: {output_path.parent}[/red]"
+            )
+            return
+        except Exception as e:
+            console.print(f"[red]Failed to create directory: {e}[/red]")
+            return
+
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
                 for word in unique_words:
                     f.write(f"{word}\n")
 
@@ -293,10 +319,13 @@ def _run_setup_wizard(config: Config):
             )
 
             if key_input.strip():
-                config.set_api_key(provider_enum.internal_name, key_input.strip())
-                console.print(
-                    f"[green]✓[/green] {provider_enum.display_name} configured"
-                )
+                try:
+                    config.set_api_key(provider_enum.internal_name, key_input.strip())
+                    console.print(
+                        f"[green]✓[/green] {provider_enum.display_name} configured"
+                    )
+                except ValueError as e:
+                    console.print(f"[red]Invalid API key: {e}[/red]")
 
 
 def _show_configuration(config: Config):
