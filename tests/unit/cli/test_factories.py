@@ -1,16 +1,15 @@
-import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
 from cli.factories import GeneratorFactory, LlmServiceFactory, ServiceDiscovery
 from config import Config
 from llm_services.llm_service import LlmProvider, LlmService
 from wordlist_generators.password_wordlist_generator import PasswordWordlistGenerator
-from wordlist_generators.subdomain_wordlist_generator import SubdomainWordlistGenerator
+from wordlist_generators.subdomain_wordlist_generator import (
+    SubdomainWordlistGenerator,
+)
 
 from ...test_constants import (
     ANTHROPIC_SERVICE_FILE,

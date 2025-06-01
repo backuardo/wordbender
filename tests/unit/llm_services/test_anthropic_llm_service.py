@@ -1,13 +1,9 @@
 import json
-import sys
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 import responses
 from requests.exceptions import ConnectionError, Timeout
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from llm_services.anthropic_llm_service import (
     AnthropicClaude3HaikuLlmService,
@@ -46,7 +42,7 @@ class TestAnthropicLlmService:
             def model_name(self) -> str:
                 return TEST_MODEL_NAME
 
-        service = TestAnthropicService(config)
+        TestAnthropicService(config)
         assert config.api_url == ANTHROPIC_API_URL
 
     def test_initialization_custom_url(self):
@@ -57,7 +53,7 @@ class TestAnthropicLlmService:
             def model_name(self) -> str:
                 return TEST_MODEL_NAME
 
-        service = TestAnthropicService(config)
+        TestAnthropicService(config)
         assert config.api_url == CUSTOM_API_URL
 
     def test_build_payload(self, service):

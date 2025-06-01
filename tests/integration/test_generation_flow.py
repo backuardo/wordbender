@@ -1,15 +1,13 @@
-import sys
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from cli.factories import GeneratorFactory, LlmServiceFactory
 from config import Config
 from wordlist_generators.password_wordlist_generator import PasswordWordlistGenerator
-from wordlist_generators.subdomain_wordlist_generator import SubdomainWordlistGenerator
+from wordlist_generators.subdomain_wordlist_generator import (
+    SubdomainWordlistGenerator,
+)
 
 
 class TestGenerationFlow:
@@ -112,7 +110,9 @@ class TestGenerationFlow:
             "choices": [
                 {
                     "message": {
-                        "content": "testword1\ntestword2\ntestword3\ntestword4\ntestword5"
+                        "content": (
+                            "testword1\ntestword2\ntestword3\n" "testword4\ntestword5"
+                        )
                     }
                 }
             ]

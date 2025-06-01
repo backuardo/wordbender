@@ -1,12 +1,9 @@
 import json
 import os
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config import Config
 from llm_services.llm_service import LlmProvider
@@ -57,14 +54,14 @@ class TestConfig:
         if example_file.exists():
             example_file.unlink()
 
-        config = Config(env_file=tmp_path / ".env")
+        Config(env_file=tmp_path / ".env")
 
         assert example_file.exists()
         mock_print.assert_any_call("\nNo .env file found. Created .env.example")
 
     def test_load_env(self, temp_env_file, monkeypatch):
         temp_env_file.write_text("TEST_VAR=test_value\n")
-        config = Config(env_file=temp_env_file)
+        Config(env_file=temp_env_file)
 
         assert os.getenv("TEST_VAR") == "test_value"
 

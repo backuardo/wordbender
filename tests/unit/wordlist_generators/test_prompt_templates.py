@@ -73,8 +73,13 @@ class TestPromptTemplate:
         sections = prompt.split("\n\n")
         assert len(sections) == 7
         expected_tags = [
-            "role", "task", "context", "methodology",
-            "input", "output_requirements", "constraints"
+            "role",
+            "task",
+            "context",
+            "methodology",
+            "input",
+            "output_requirements",
+            "constraints",
         ]
         for tag in expected_tags:
             assert f"<{tag}>" in prompt

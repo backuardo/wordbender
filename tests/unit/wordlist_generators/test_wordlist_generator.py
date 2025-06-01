@@ -1,10 +1,7 @@
-import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from wordlist_generators.wordlist_generator import WordlistGenerator
 
@@ -130,7 +127,10 @@ class TestWordlistGenerator:
         generator.wordlist_length = 50
         generator.additional_instructions = "Only short words"
         prompt = generator.build_prompt()
-        expected = "Test prompt with test1, test2 and 50\n\nAdditional instructions: Only short words"
+        expected = (
+            "Test prompt with test1, test2 and 50\n\n"
+            "Additional instructions: Only short words"
+        )
         assert prompt == expected
 
     def test_prompt_injection_protection(self, generator):

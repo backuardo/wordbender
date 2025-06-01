@@ -1,11 +1,8 @@
 import json
-import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from cli.factories import LlmServiceFactory
 from config import Config
@@ -35,7 +32,7 @@ class TestConfigurationFlow:
     @pytest.mark.integration
     def test_first_run_setup_flow(self, temp_config_env):
         with patch("builtins.print") as mock_print:
-            config = Config()
+            Config()  # Instantiate to trigger first-run behavior
 
         example_file = temp_config_env["work_dir"] / ".env.example"
         assert example_file.exists()

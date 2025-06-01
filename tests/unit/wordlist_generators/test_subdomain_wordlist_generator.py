@@ -1,11 +1,10 @@
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
-from wordlist_generators.subdomain_wordlist_generator import SubdomainWordlistGenerator
+from wordlist_generators.subdomain_wordlist_generator import (
+    SubdomainWordlistGenerator,
+)
 
 from ...test_constants import SUBDOMAIN_MAX_LENGTH as MAX_LENGTH
 from ...test_constants import SUBDOMAIN_MIN_LENGTH as MIN_LENGTH

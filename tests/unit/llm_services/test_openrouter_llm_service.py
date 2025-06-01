@@ -1,13 +1,9 @@
 import json
-import sys
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 import responses
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+from requests.exceptions import ConnectionError, Timeout
 
 from llm_services.llm_service import LlmConfig
 from llm_services.openrouter_llm_service import (
@@ -45,7 +41,7 @@ class TestOpenRouterLlmService:
             def model_name(self) -> str:
                 return TEST_MODEL_NAME
 
-        service = TestOpenRouterService(config)
+        TestOpenRouterService(config)
         assert config.api_url == OPENROUTER_API_URL
 
     def test_initialization_custom_url(self):
@@ -56,7 +52,7 @@ class TestOpenRouterLlmService:
             def model_name(self) -> str:
                 return TEST_MODEL_NAME
 
-        service = TestOpenRouterService(config)
+        TestOpenRouterService(config)
         assert config.api_url == CUSTOM_API_URL
 
     @responses.activate
