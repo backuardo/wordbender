@@ -66,9 +66,9 @@ class TestSubdomainWordlistGenerator:
         ]
 
         for subdomain in invalid_subdomains:
-            assert not generator._validate_word(
-                subdomain
-            ), f"'{subdomain}' should be invalid"
+            assert not generator._validate_word(subdomain), (
+                f"'{subdomain}' should be invalid"
+            )
 
     def test_process_generated_words_lowercase(self, generator):
         words = ["API", "Dev-Server", "TEST123", "Mixed-Case"]
