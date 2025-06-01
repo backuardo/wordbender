@@ -2,6 +2,11 @@
 
 # Wordbender
 
+[![CI](https://github.com/backuardo/wordbender/actions/workflows/ci.yml/badge.svg)](https://github.com/backuardo/wordbender/actions/workflows/ci.yml)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 An LLM-powered targeted wordlist generator that creates base wordlists for password cracking and subdomain enumeration tools. Wordbender uses AI language models to generate contextually relevant seed words that are then fed into tools like Hashcat, Gobuster, or ffuf.
 
 ## What This Tool Does
