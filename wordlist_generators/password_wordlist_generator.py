@@ -3,6 +3,10 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 
+from wordlist_generators.prompt_templates import (
+    PromptTemplate,
+    create_simple_prompt,
+)
 from wordlist_generators.wordlist_generator import WordlistGenerator
 
 
@@ -22,7 +26,23 @@ class PasswordWordlistGenerator(WordlistGenerator):
 
     def _get_system_prompt(self) -> str:
         """Return the system prompt for password base word generation"""
-        return dedent(
+        focus_areas = [
+            "Words semantically related to the seeds (synonyms, associated concepts)",
+            "Common variations in spelling (color/colour, center/centre)",
+            "Related proper nouns (brands, locations, cultural references)",
+            "Compound words using the seeds",
+            "Industry or context-specific terminology",
+            "Pop culture references related to the seeds",
+        ]
+
+        do_not_include = [
+            "Special characters or numbers (Hashcat will handle mutations)",
+            "Explanations or categories",
+            "Duplicate words",
+            "Very short (less than 3 chars) or very long (over 30 chars) words",
+        ]
+
+        return create_simple_prompt(
             """\
             You are an expert in generating base wordlists for password cracking.
 
@@ -32,20 +52,16 @@ class PasswordWordlistGenerator(WordlistGenerator):
             mutation rules in tools like Hashcat.
 
             Focus on:
-            - Words semantically related to the seeds (synonyms, associated concepts)
-            - Common variations in spelling (color/colour, center/centre)
-            - Related proper nouns (brands, locations, cultural references)
-            - Compound words using the seeds
-            - Industry or context-specific terminology
-            - Pop culture references related to the seeds
+            {focus_areas}
 
             Output ONLY alphanumeric base words, one per line.
             Do NOT include:
-            - Special characters or numbers (Hashcat will handle mutations)
-            - Explanations or categories
-            - Duplicate words
-            - Very short (less than 3 chars) or very long (over 30 chars) words\
-            """
+            {do_not_include}\
+            """,
+            seed_words="{seed_words}",
+            wordlist_length="{wordlist_length}",
+            focus_areas=PromptTemplate.format_list(focus_areas),
+            do_not_include=PromptTemplate.format_list(do_not_include),
         )
 
     def _validate_word(self, word: str) -> bool:
@@ -74,6 +90,99 @@ class PasswordWordlistGenerator(WordlistGenerator):
 
             Example: john smith may31989 fluffy chicago bears accounting\
             """
+        )
+
+    def _get_detailed_system_prompt(self) -> str:
+        """Return the detailed system prompt for password generation."""
+        role = (
+            "You are a cybersecurity expert specializing in password pattern "
+            "analysis and social engineering-based wordlist generation for "
+            "ethical penetration testing."
+        )
+
+        task = (
+            "Generate a targeted password base wordlist from personal intelligence "
+            "about a specific individual. Focus on realistic human password "
+            "selection behaviors based on personal significance and emotional "
+            "attachment, not linguistic associations."
+        )
+
+        intelligence_items = [
+            "Personal identifiers (names, nicknames, usernames)",
+            "Significant dates and time periods "
+            "(birthdays, anniversaries, graduation years)",
+            "Personal relationships (family members, pets, close friends)",
+            "Geographic connections (hometowns, places lived, vacation spots)",
+            "Personal interests and passions " "(hobbies, sports teams, music, movies)",
+            "Professional context (employers, job roles, departments, projects)",
+            "Meaningful numbers and identifiers "
+            "(area codes, lucky numbers, addresses)",
+        ]
+        intelligence_context = (
+            "The seed words represent personal intelligence about the target "
+            "including:\n" + PromptTemplate.format_list(intelligence_items)
+        )
+
+        methodology_parts = [
+            "**Name variations**: Full names, nicknames, shortened versions, "
+            "combinations\n"
+            '   - If "john": include john, johnny, johnnie, johny, jr\n'
+            '   - If "smith": include smith, smiths, smithy',
+            "**Personal significance expansion**:\n"
+            "   - Family/pet names and their common variations\n"
+            "   - Favorite teams → team names, mascots, cities, rivalries\n"
+            "   - Hobbies → equipment, terminology, famous figures\n"
+            "   - Places → city names, nicknames, zip codes, area codes",
+            "**Emotional connections**:\n"
+            "   - Combine related personal elements "
+            "(petname + hometown, team + birthyear)\n"
+            "   - Important life events and associated terms\n"
+            "   - Childhood memories and references",
+            "**Professional identity**:\n"
+            "   - Company names, abbreviations, department names\n"
+            "   - Job titles, project names, industry terms",
+            "**Common password psychology**:\n"
+            "   - Things they're proud of or emotionally attached to\n"
+            "   - Easy-to-remember personal combinations\n"
+            "   - Seasonal or temporal references from their life",
+        ]
+        methodology = (
+            "Analyze the personal intelligence to generate words people actually "
+            "use in passwords:\n\n"
+            + PromptTemplate.format_numbered_list(methodology_parts)
+        )
+
+        input_spec = (
+            "Personal intelligence seed words: {seed_words}\n"
+            "Target output length: {wordlist_length} words"
+        )
+
+        output_requirements = [
+            "Output exactly {wordlist_length} base words",
+            "One word per line, no other text",
+            "Only alphanumeric characters (hashcat handles mutations)",
+            "Length: 3-30 characters per word",
+            "No duplicates",
+            "All words must have personal significance to the target based on "
+            "provided intelligence",
+        ]
+
+        constraints = [
+            "Do NOT include generic passwords unrelated to personal intelligence",
+            "Do NOT include leetspeak or character substitutions",
+            "Do NOT include random names unconnected to the target",
+            "Do NOT include dictionary words without personal connection",
+            "Do NOT include explanations or categories in output",
+        ]
+
+        return PromptTemplate.create_prompt(
+            role=role,
+            task=task,
+            methodology=methodology,
+            input_spec=input_spec,
+            output_requirements=PromptTemplate.format_list(output_requirements),
+            constraints=PromptTemplate.format_list(constraints),
+            additional_sections={"intelligence_context": intelligence_context},
         )
 
     def get_usage_instructions(self) -> str:

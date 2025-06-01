@@ -3,6 +3,10 @@ from pathlib import Path
 from textwrap import dedent
 from typing import List, Optional
 
+from wordlist_generators.prompt_templates import (
+    PromptTemplate,
+    create_simple_prompt,
+)
 from wordlist_generators.wordlist_generator import WordlistGenerator
 
 
@@ -22,7 +26,18 @@ class SubdomainWordlistGenerator(WordlistGenerator):
 
     def _get_system_prompt(self) -> str:
         """Return the system prompt for subdomain generation."""
-        return dedent(
+        focus_areas = [
+            "Common subdomain patterns (api, dev, staging, prod, test)",
+            "Department names (hr, finance, it, sales)",
+            "Geographic indicators (us-east, eu-west, asia)",
+            "Service indicators (mail, ftp, vpn, portal)",
+            "Version indicators (v1, v2, new, old, legacy)",
+            "Environment indicators (uat, qa, demo)",
+            "Combinations with seed words",
+            "Industry-specific subdomains based on the seed context",
+        ]
+
+        return create_simple_prompt(
             """\
             You are an expert in generating subdomain wordlists for penetration testing.
 
@@ -31,19 +46,15 @@ class SubdomainWordlistGenerator(WordlistGenerator):
             Generate exactly {wordlist_length} potential subdomains.
 
             Focus on:
-            - Common subdomain patterns (api, dev, staging, prod, test)
-            - Department names (hr, finance, it, sales)
-            - Geographic indicators (us-east, eu-west, asia)
-            - Service indicators (mail, ftp, vpn, portal)
-            - Version indicators (v1, v2, new, old, legacy)
-            - Environment indicators (uat, qa, demo)
-            - Combinations with seed words
-            - Industry-specific subdomains based on the seed context
+            {focus_areas}
 
             Output ONLY valid subdomain labels (lowercase, alphanumeric, hyphens allowed
             but not at start/end).
             One subdomain per line, no explanations.\
-        """
+            """,
+            seed_words="{seed_words}",
+            wordlist_length="{wordlist_length}",
+            focus_areas=PromptTemplate.format_list(focus_areas),
         )
 
     def _validate_word(self, word: str) -> bool:
@@ -65,7 +76,6 @@ class SubdomainWordlistGenerator(WordlistGenerator):
 
     def _process_generated_words(self, words: List[str]) -> List[str]:
         """Process generated words, ensuring they're lowercase."""
-        # Convert to lowercase before processing (validation already does this)
         lowercase_words = [word.lower() for word in words]
         return super()._process_generated_words(lowercase_words)
 
@@ -85,6 +95,95 @@ class SubdomainWordlistGenerator(WordlistGenerator):
 
             Example: acmecorp acme fintech aws cloud newyork payment gateway\
             """
+        )
+
+    def _get_detailed_system_prompt(self) -> str:
+        """Return the detailed system prompt for subdomain generation."""
+        role = (
+            "You are a cybersecurity expert specializing in subdomain "
+            "enumeration and organizational infrastructure naming patterns "
+            "for ethical penetration testing."
+        )
+
+        task = (
+            "Generate a targeted subdomain wordlist based on organizational "
+            "intelligence provided as seed words. Reflect realistic corporate "
+            "subdomain naming conventions by analyzing the organizational "
+            "context and applying appropriate naming patterns."
+        )
+
+        context_items = [
+            "Company names, abbreviations, stock tickers, brand names",
+            "Industry sector and specialized terminology",
+            "Technology stack, platforms, and services",
+            "Geographic locations and regional presence",
+            "Product names, services, and project codenames",
+            "Organizational structure (departments, teams, business units)",
+            "Partner and vendor relationships",
+        ]
+        context = (
+            "The seed words represent organizational intelligence including:\n"
+            + PromptTemplate.format_list(context_items)
+        )
+
+        methodology_steps = [
+            "**Parse organizational context** from seed words to understand:\n"
+            "   - Primary business focus and industry\n"
+            "   - Technology ecosystem and platforms used\n"
+            "   - Geographic footprint and regional structure\n"
+            "   - Product/service portfolio",
+            "**Apply naming pattern hierarchy**:\n"
+            "   - **Core infrastructure**: Standard patterns "
+            "(api, dev, staging, prod, test, admin, portal, mail)\n"
+            "   - **Company-specific**: [company]-[service], "
+            "[brand]-[environment]\n"
+            "   - **Product-focused**: [product]-api, [service]-dev, "
+            "[project]-staging\n"
+            "   - **Geographic**: [location]-prod, [region]-portal, "
+            "[country]-api\n"
+            "   - **Technology-based**: [platform]-[env], [stack]-test "
+            "(e.g., aws-prod, k8s-staging)\n"
+            "   - **Department-oriented**: [dept]-portal, [team]-dev, "
+            "[unit]-api\n"
+            "   - **Industry-specific**: Apply domain-relevant patterns "
+            "(fintech: payment-api, compliance-portal)",
+            "**Prioritize by likelihood**: More common patterns first, then "
+            "context-specific variations",
+        ]
+        methodology = PromptTemplate.format_numbered_list(methodology_steps)
+
+        input_spec = (
+            "Seed words: {seed_words}\n"
+            "Target output length: {wordlist_length} subdomains"
+        )
+
+        output_requirements = [
+            "Output exactly {wordlist_length} subdomain labels",
+            "One subdomain per line, no other text",
+            "Lowercase alphanumeric characters and hyphens only",
+            "Hyphens not at start or end of labels",
+            "Length: 1-63 characters per label",
+            "No duplicates",
+            "Prioritize most realistic patterns based on organizational context",
+        ]
+
+        constraints = [
+            "Do NOT include invalid DNS characters",
+            "Do NOT include generic subdomains unrelated to organizational context",
+            "Do NOT include explanations or categories in output",
+            "Do NOT start or end labels with hyphens",
+            "Do NOT exceed DNS label length limits",
+        ]
+
+        return PromptTemplate.create_prompt(
+            role=role,
+            task=task,
+            context=context,
+            methodology=methodology,
+            input_spec=input_spec,
+            output_requirements=PromptTemplate.format_list(output_requirements),
+            constraints=PromptTemplate.format_list(constraints),
+            additional_sections={"context_analysis": context},
         )
 
     def get_usage_instructions(self) -> str:
