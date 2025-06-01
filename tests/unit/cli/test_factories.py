@@ -6,11 +6,6 @@ import pytest
 from cli.factories import GeneratorFactory, LlmServiceFactory, ServiceDiscovery
 from config import Config
 from llm_services.llm_service import LlmProvider, LlmService
-from wordlist_generators.password_wordlist_generator import PasswordWordlistGenerator
-from wordlist_generators.subdomain_wordlist_generator import (
-    SubdomainWordlistGenerator,
-)
-
 from tests.test_constants import (
     ANTHROPIC_SERVICE_FILE,
     GENERATOR_DIR,
@@ -21,6 +16,10 @@ from tests.test_constants import (
     SUBDOMAIN_GENERATOR_FILE,
     TEST_API_KEY,
     TEST_MODEL_NAME,
+)
+from wordlist_generators.password_wordlist_generator import PasswordWordlistGenerator
+from wordlist_generators.subdomain_wordlist_generator import (
+    SubdomainWordlistGenerator,
 )
 
 

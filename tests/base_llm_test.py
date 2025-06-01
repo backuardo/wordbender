@@ -32,22 +32,28 @@ class BaseLlmServiceTest:
         for field, value in expected_fields.items():
             assert body[field] == value
 
-    @pytest.mark.parametrize("status_code,error_message", [
-        (403, "Access forbidden"),
-        (404, "Not found"),
-        (500, "Server error")
-    ])
+    @pytest.mark.parametrize(
+        "status_code,error_message",
+        [(403, "Access forbidden"), (404, "Not found"), (500, "Server error")],
+    )
     def test_api_error_codes(self, service, api_url, status_code, error_message):
         responses.add(responses.POST, api_url, status=status_code)
-        
+
         with pytest.raises(RuntimeError):
             service._call_api("test", 100)
 
-    @pytest.mark.parametrize("exception_class,exception_args", [
-        (Timeout, ()),
-        (ConnectionError, ("Network error",))
-    ])
-    def test_api_retry_on_exception(self, service, success_response, expected_content, exception_class, exception_args):
+    @pytest.mark.parametrize(
+        "exception_class,exception_args",
+        [(Timeout, ()), (ConnectionError, ("Network error",))],
+    )
+    def test_api_retry_on_exception(
+        self,
+        service,
+        success_response,
+        expected_content,
+        exception_class,
+        exception_args,
+    ):
         with patch("requests.post") as mock_post:
             mock_response = Mock(
                 status_code=200,

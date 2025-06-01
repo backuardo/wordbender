@@ -264,7 +264,6 @@ class TestWordlistGenerator:
         with pytest.raises(IOError, match="Failed to create directory"):
             generator.save(path=bad_path / "wordlist.txt")
 
-
     def test_unicode_handling(self, generator):
         mock_service = Mock()
         unicode_words = ["café", "naïve", "résumé", "validword", "münchen"]
