@@ -143,6 +143,9 @@ class InteractiveSession:
         append_input = prompt("Append to file? [y/N]: ").strip().lower()
         options["append"] = append_input in ["y", "yes"]
 
+        dry_run_input = prompt("Dry run (preview prompt only)? [y/N]: ").strip().lower()
+        options["dry_run"] = dry_run_input in ["y", "yes"]
+
         return options
 
     def select_llm_service(self) -> Optional[Tuple[str, Optional[str]]]:

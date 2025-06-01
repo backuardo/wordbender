@@ -5,6 +5,7 @@ from typing import List, Optional
 import click
 from prompt_toolkit import prompt
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
@@ -46,8 +47,11 @@ def config_cmd(setup, show, provider, key):
 @click.option("-m", "--model", help="Specific model to use")
 @click.option("-a", "--append", is_flag=True, help="Append to existing file")
 @click.option("--instructions", help="Additional instructions for the LLM")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without generating"
+)
 def generate_cmd(
-    wordlist_type, seed, output, length, provider, model, append, instructions
+    wordlist_type, seed, output, length, provider, model, append, instructions, dry_run
 ):
     """Generate a wordlist from seed words."""
     app = WordbenderApp()
@@ -90,6 +94,7 @@ def generate_cmd(
     options = {
         "length": length,
         "append": append,
+        "dry_run": dry_run,
     }
     if instructions:
         options["instructions"] = instructions
@@ -106,7 +111,10 @@ def generate_cmd(
 @click.option("-l", "--length", type=int, default=100, help="Target length per batch")
 @click.option("-p", "--provider", help="LLM provider to use")
 @click.option("-b", "--batch-size", type=int, default=5, help="Seeds per batch")
-def batch_cmd(input_file, wordlist_type, output, length, provider, batch_size):
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without generating"
+)
+def batch_cmd(input_file, wordlist_type, output, length, provider, batch_size, dry_run):
     """Generate wordlists from a file of seed words."""
     processor = BatchProcessor()
     processor.process(
@@ -116,6 +124,7 @@ def batch_cmd(input_file, wordlist_type, output, length, provider, batch_size):
         length=length,
         provider=provider,
         batch_size=batch_size,
+        dry_run=dry_run,
     )
 
 
@@ -135,6 +144,7 @@ class BatchProcessor:
         length: int,
         provider: Optional[str],
         batch_size: int,
+        dry_run: bool = False,
     ):
         """Process a batch of seed words."""
         seed_words = self._load_seed_words(input_file)
@@ -150,13 +160,18 @@ class BatchProcessor:
 
         console.print(f"[bold]Found {len(seed_words)} seed words[/bold]")
 
-        all_words = self._process_all_batches(
-            seed_words, wordlist_type, length, provider_name, batch_size
-        )
+        if dry_run:
+            self._show_dry_run_batch(
+                seed_words, wordlist_type, length, provider_name, batch_size, output
+            )
+        else:
+            all_words = self._process_all_batches(
+                seed_words, wordlist_type, length, provider_name, batch_size
+            )
 
-        if all_words:
-            output_path = output or Path(f"{wordlist_type}_batch_wordlist.txt")
-            self._save_results(all_words, output_path)
+            if all_words:
+                output_path = output or Path(f"{wordlist_type}_batch_wordlist.txt")
+                self._save_results(all_words, output_path)
 
     def _load_seed_words(self, input_file: Path) -> List[str]:
         """Load seed words from file."""
@@ -293,6 +308,51 @@ class BatchProcessor:
 
         except Exception as e:
             console.print(f"[red]Failed to save results: {e}[/red]")
+
+    def _show_dry_run_batch(
+        self,
+        seed_words: List[str],
+        wordlist_type: str,
+        length: int,
+        provider_name: str,
+        batch_size: int,
+        output: Optional[Path],
+    ):
+        """Show what would be done in a dry run."""
+        console.print("\n[yellow]DRY RUN MODE - No words will be generated[/yellow]\n")
+
+        output_path = output or Path(f"{wordlist_type}_batch_wordlist.txt")
+        num_batches = (len(seed_words) + batch_size - 1) // batch_size
+
+        console.print("[bold]Batch Processing Plan:[/bold]")
+        table = Table(show_header=False, box=None)
+        table.add_row("Wordlist Type:", wordlist_type)
+        table.add_row("Provider:", provider_name)
+        table.add_row("Total Seeds:", str(len(seed_words)))
+        table.add_row("Batch Size:", str(batch_size))
+        table.add_row("Number of Batches:", str(num_batches))
+        table.add_row("Words per Batch:", str(length))
+        table.add_row("Expected Total Words:", f"~{num_batches * length}")
+        table.add_row("Output File:", str(output_path))
+        console.print(table)
+
+        console.print("\n[bold]Sample Batch (first batch):[/bold]")
+        first_batch = seed_words[: min(batch_size, len(seed_words))]
+        console.print(f"Seeds: {', '.join(first_batch)}")
+
+        try:
+            generator = self.generator_factory.create(wordlist_type)
+            if generator:
+                generator.wordlist_length = length
+                for word in first_batch:
+                    generator.add_seed_words(word)
+                sample_prompt = generator.build_prompt()
+                console.print("\n[bold]Sample Prompt:[/bold]")
+                console.print(
+                    Panel(sample_prompt, title="First Batch Prompt", border_style="dim")
+                )
+        except Exception as e:
+            console.print(f"[yellow]Could not generate sample prompt: {e}[/yellow]")
 
 
 def _run_setup_wizard(config: Config):

@@ -201,6 +201,7 @@ Options:
 - `-p, --provider TEXT`: LLM provider to use
 - `-m, --model TEXT`: Specific model to use
 - `-i, --instructions TEXT`: Additional instructions for the LLM
+- `--dry-run`: Preview the prompt without making API calls
 
 ### Batch Command
 ```bash
@@ -212,6 +213,7 @@ Options:
 - `-o, --output PATH`: Output file path
 - `-p, --provider TEXT`: LLM provider to use
 - `-b, --batch-size INTEGER`: Seeds to process per batch (default: 5)
+- `--dry-run`: Preview the prompt without making API calls
 
 ### Config Command
 ```bash
@@ -277,6 +279,18 @@ uv run wordbender.py generate subdomain \
 
 # Interactive mode will show all available providers and models
 uv run wordbender.py
+```
+
+### Preview Before Generation
+
+Use `--dry-run` to preview prompts before making API calls:
+
+```bash
+# Preview what would be sent to the LLM
+uv run wordbender.py generate password -s admin -s test --dry-run
+
+# Also works with batch processing
+uv run wordbender.py batch seeds.txt subdomain --dry-run
 ```
 
 ## Troubleshooting

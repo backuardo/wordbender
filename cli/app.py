@@ -93,6 +93,9 @@ class WordbenderApp:
             if output_file:
                 generator.output_file = output_file
 
+        if options.get("dry_run", False):
+            return self._show_dry_run(generator, llm_service, seed_words, options)
+
         with yaspin(text="Contacting LLM service...", color="cyan") as spinner:
             try:
                 spinner.text = "Generating wordlist..."
@@ -119,7 +122,6 @@ class WordbenderApp:
             generator.save(append=options.get("append", False))
             console.print(f"[green]✓ Saved to: {generator.output_file}[/green]")
 
-            # Show usage instructions
             if hasattr(generator, "get_usage_instructions"):
                 console.print(
                     f"\n[bold cyan]{generator.get_usage_instructions()}[/bold cyan]"
@@ -129,6 +131,60 @@ class WordbenderApp:
         except Exception as e:
             console.print(f"[red]Failed to save: {e}[/red]")
             return False
+
+    def _show_dry_run(
+        self,
+        generator: WordlistGenerator,
+        llm_service: LlmService,
+        seed_words: List[str],
+        options: Dict,
+    ) -> bool:
+        """Show what would be done in dry run mode."""
+        console.print("\n[yellow]DRY RUN MODE - No words will be generated[/yellow]\n")
+        console.print("[bold]Generation Plan:[/bold]")
+        table = Table(show_header=False, box=None)
+        generator_type = generator.__class__.__name__.replace(
+            "WordlistGenerator", ""
+        ).lower()
+        table.add_row("Generator:", generator_type)
+        table.add_row("Seeds:", ", ".join(seed_words))
+        table.add_row("Target Length:", str(options.get("length", 100)))
+
+        provider_name = llm_service.provider.name
+        provider_enum = LlmProvider.get_by_name(provider_name)
+        provider_display = (
+            provider_enum.display_name if provider_enum else provider_name
+        )
+        table.add_row("Provider:", provider_display)
+
+        if hasattr(llm_service, "model_name"):
+            table.add_row("Model:", llm_service.model_name)
+
+        table.add_row("Output File:", str(generator.output_file))
+        if options.get("append", False):
+            table.add_row("Mode:", "Append to existing file")
+        else:
+            table.add_row("Mode:", "Create/overwrite file")
+
+        if "instructions" in options:
+            table.add_row("Additional Instructions:", options["instructions"])
+
+        console.print(table)
+
+        try:
+            prompt = generator.build_prompt()
+            console.print("\n[bold]Prompt that would be sent to LLM:[/bold]")
+            console.print(Panel(prompt, title="LLM Prompt", border_style="dim"))
+        except Exception as e:
+            console.print(f"\n[red]Error building prompt: {e}[/red]")
+            return False
+
+        if hasattr(generator, "get_usage_instructions"):
+            console.print("\n[bold cyan]Usage Instructions:[/bold cyan]")
+            console.print(generator.get_usage_instructions())
+
+        console.print("\n[green]✓ Dry run completed successfully[/green]")
+        return True
 
     def run_interactive_session(self):
         """Run the interactive mode."""
