@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Any, Dict
+from typing import Any
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
@@ -20,7 +20,7 @@ class AnthropicLlmService(LlmService):
     def provider(self) -> LlmProvider:
         return LlmProvider.ANTHROPIC
 
-    def _build_payload(self, prompt: str, max_tokens: int) -> Dict[str, Any]:
+    def _build_payload(self, prompt: str, max_tokens: int) -> dict[str, Any]:
         """Build the request payload for Anthropic API."""
         return {
             "model": self.model_name,
@@ -88,7 +88,7 @@ class AnthropicLlmService(LlmService):
                     except json.JSONDecodeError:
                         raise RuntimeError(
                             f"Anthropic API bad request: {response.text}"
-                        )
+                        ) from None
 
                 response.raise_for_status()
 
@@ -96,7 +96,9 @@ class AnthropicLlmService(LlmService):
                 try:
                     data = response.json()
                 except json.JSONDecodeError as e:
-                    raise RuntimeError(f"Invalid JSON response from Anthropic: {e}")
+                    raise RuntimeError(
+                        f"Invalid JSON response from Anthropic: {e}"
+                    ) from e
 
                 # Extract content from Anthropic's response format
                 if "content" not in data or not data["content"]:
@@ -109,7 +111,8 @@ class AnthropicLlmService(LlmService):
                 if not content_blocks or "text" not in content_blocks[0]:
                     raise RuntimeError(f"No text content in Anthropic response: {data}")
 
-                return content_blocks[0]["text"]
+                text_content = content_blocks[0]["text"]
+                return str(text_content) if text_content else ""
 
             except Timeout:
                 last_error = RuntimeError(
@@ -138,11 +141,11 @@ class AnthropicLlmService(LlmService):
                     retry_delay *= 2
                     continue
                 else:
-                    raise last_error
+                    raise last_error from None
 
             except RequestException as e:
                 last_error = RuntimeError(f"Anthropic API request failed: {e}")
-                raise last_error
+                raise last_error from e
 
             except RuntimeError:
                 # Re-raise our custom runtime errors
@@ -152,7 +155,7 @@ class AnthropicLlmService(LlmService):
                 last_error = RuntimeError(
                     f"Unexpected error calling Anthropic API: {type(e).__name__} - {e}"
                 )
-                raise last_error
+                raise last_error from e
 
         # If we exhausted all retries
         if last_error:

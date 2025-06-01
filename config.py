@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dotenv import load_dotenv, set_key
 from rich.console import Console
@@ -14,7 +14,7 @@ console = Console()
 class Config:
     """Local configuration management using .env files."""
 
-    def __init__(self, env_file: Optional[Path] = None):
+    def __init__(self, env_file: Path | None = None):
         self._env_file = env_file or self._find_env_file()
         self._config_file = Path.home() / ".wordbender" / "config.json"
         self._load_env()
@@ -50,7 +50,7 @@ class Config:
         """Create config directory for preferences."""
         self._config_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def get_api_key(self, provider: str) -> Optional[str]:
+    def get_api_key(self, provider: str) -> str | None:
         """Get API key from environment variables."""
         provider_enum = LlmProvider.get_by_name(provider)
         if not provider_enum:
@@ -96,29 +96,32 @@ class Config:
 
         print(f"Set {env_var} in {self._env_file}")
 
-    def list_configured_providers(self) -> Dict[str, bool]:
+    def list_configured_providers(self) -> dict[str, bool]:
         """List providers and their configuration status."""
         return {
             provider.internal_name: self.get_api_key(provider.internal_name) is not None
             for provider in LlmProvider.requiring_api_keys()
         }
 
-    def get_available_providers(self) -> List[str]:
+    def get_available_providers(self) -> list[str]:
         """Get list of all available provider names."""
         return [p.internal_name for p in LlmProvider]
 
-    def get_preferences(self) -> Dict[str, Any]:
+    def get_preferences(self) -> dict[str, Any]:
         """Load user preferences from JSON config file."""
         if not self._config_file.exists():
             return self._get_default_preferences()
 
         try:
-            with open(self._config_file, "r") as f:
-                return json.load(f)
+            with open(self._config_file) as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+                return {}
         except json.JSONDecodeError as e:
             console.print(f"[yellow]Warning: Invalid JSON in config file: {e}[/yellow]")
             return self._get_default_preferences()
-        except (IOError, OSError) as e:
+        except OSError as e:
             console.print(f"[yellow]Warning: Could not read config file: {e}[/yellow]")
             return self._get_default_preferences()
 
@@ -131,8 +134,8 @@ class Config:
             self._config_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self._config_file, "w") as f:
                 json.dump(prefs, f, indent=2)
-        except (IOError, OSError) as e:
-            raise RuntimeError(f"Failed to save preferences: {e}")
+        except OSError as e:
+            raise RuntimeError(f"Failed to save preferences: {e}") from e
 
     def reset_preferences(self) -> None:
         """Reset preferences to defaults."""
@@ -141,7 +144,7 @@ class Config:
         with open(self._config_file, "w") as f:
             json.dump(defaults, f, indent=2)
 
-    def _get_default_preferences(self) -> Dict[str, Any]:
+    def _get_default_preferences(self) -> dict[str, Any]:
         """Get default preferences."""
         return {
             "default_provider": "openrouter",
@@ -184,29 +187,31 @@ class Config:
             print("\nNo API keys configured!")
             print("Please add at least one API key to your .env file:")
 
-            for provider in LlmProvider.requiring_api_keys():
-                if provider.env_var:
-                    print(f"    {provider.env_var}=your-key-here")
+            for llm_provider in LlmProvider.requiring_api_keys():
+                if llm_provider.env_var:
+                    print(f"    {llm_provider.env_var}=your-key-here")
 
             return False
 
         print("\nConfigured providers:")
         for provider_name, configured in status.items():
             if configured:
-                provider = LlmProvider.get_by_name(provider_name)
-                if provider:
-                    print(f"    - {provider.display_name}")
+                found_provider: LlmProvider | None = LlmProvider.get_by_name(
+                    provider_name
+                )
+                if found_provider:
+                    print(f"    - {found_provider.display_name}")
 
         return True
 
-    def select_provider(self, provider_name: Optional[str] = None) -> Optional[str]:
+    def select_provider(self, provider_name: str | None = None) -> str | None:
         """Select a provider, either specified or from configured ones."""
         if provider_name:
             provider = LlmProvider.get_by_name(provider_name)
             if not provider:
                 print(f"Unknown provider: {provider_name}")
-                available = ", ".join(p.internal_name for p in LlmProvider)
-                print(f"Available providers: {available}")
+                provider_list = ", ".join(p.internal_name for p in LlmProvider)
+                print(f"Available providers: {provider_list}")
                 return None
 
             if provider.requires_api_key and not self.get_api_key(provider_name):
@@ -218,7 +223,7 @@ class Config:
             return provider_name
 
         configured = self.list_configured_providers()
-        available = [name for name, has_key in configured.items() if has_key]
+        available: list[str] = [name for name, has_key in configured.items() if has_key]
 
         if not available:
             print("No providers configured with API keys")
@@ -227,7 +232,7 @@ class Config:
         prefs = self.get_preferences()
         default = prefs.get("default_provider")
 
-        if default in available:
-            return default
+        if default and isinstance(default, str) and default in available:
+            return str(default)
 
         return available[0] if available else None

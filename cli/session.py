@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
@@ -25,7 +25,7 @@ class InteractiveSession:
         self.generator_factory = generator_factory
         self.llm_factory = llm_factory
 
-    def select_wordlist_type(self) -> Optional[str]:
+    def select_wordlist_type(self) -> str | None:
         """Interactive menu to select wordlist type."""
         console.print("\n[bold]Select wordlist type:[/bold]")
 
@@ -60,7 +60,7 @@ class InteractiveSession:
             console.print(f"[red]Error: {e}[/red]")
             return None
 
-    def get_seed_words(self, generator=None) -> List[str]:
+    def get_seed_words(self, generator=None) -> list[str]:
         """Get seed words from user interactively."""
         console.print("\n[bold]Enter seed words:[/bold]")
 
@@ -95,9 +95,9 @@ class InteractiveSession:
             else:
                 console.print("[yellow]No valid seed words found[/yellow]")
 
-    def get_generation_options(self) -> Dict:
+    def get_generation_options(self) -> dict[str, Any]:
         """Get additional generation options from user."""
-        options = {}
+        options: dict[str, Any] = {}
 
         console.print(
             "\n[bold]Additional options:[/bold] [dim](press Enter for defaults)[/dim]"
@@ -148,7 +148,7 @@ class InteractiveSession:
 
         return options
 
-    def select_llm_service(self) -> Optional[Tuple[str, Optional[str]]]:
+    def select_llm_service(self) -> tuple[str, str | None] | None:
         """Select LLM provider and model."""
         available_providers = []
 
@@ -180,13 +180,18 @@ class InteractiveSession:
 
         return (provider, None)
 
-    def _select_provider(self, available_providers: List[str]) -> Optional[str]:
+    def _select_provider(self, available_providers: list[str]) -> str | None:
         """Select a provider from available ones."""
         prefs = self.config.get_preferences()
         default_provider = prefs.get("default_provider")
 
-        if default_provider in available_providers and len(available_providers) == 1:
-            return default_provider
+        if (
+            default_provider
+            and isinstance(default_provider, str)
+            and default_provider in available_providers
+            and len(available_providers) == 1
+        ):
+            return str(default_provider)
         elif len(available_providers) == 1:
             return available_providers[0]
 
@@ -219,7 +224,7 @@ class InteractiveSession:
 
         return None
 
-    def _select_model(self, provider: str, models: List[str]) -> Optional[str]:
+    def _select_model(self, provider: str, models: list[str]) -> str | None:
         """Select a model for the given provider."""
         console.print(f"\n[bold]Select model for {provider}:[/bold]")
         table = Table(show_header=False, box=None)

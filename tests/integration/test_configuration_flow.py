@@ -12,7 +12,6 @@ TEST_ANTHROPIC_KEY = "test-anthropic-key"
 
 
 class TestConfigurationFlow:
-
     @pytest.fixture
     def temp_config_env(self, tmp_path, monkeypatch):
         home_dir = tmp_path / "home"

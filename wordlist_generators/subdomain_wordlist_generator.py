@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Optional
 
 from wordlist_generators.prompt_templates import (
     PromptTemplate,
@@ -17,7 +16,7 @@ class SubdomainWordlistGenerator(WordlistGenerator):
     MAX_LENGTH = 63  # DNS label limit
     VALID_CHARS_PATTERN = re.compile(r"^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?$")
 
-    def __init__(self, output_file: Optional[Path] = None):
+    def __init__(self, output_file: Path | None = None):
         super().__init__(output_file)
 
     def _get_default_output_path(self) -> Path:
@@ -74,7 +73,7 @@ class SubdomainWordlistGenerator(WordlistGenerator):
 
         return bool(self.VALID_CHARS_PATTERN.match(word_lower))
 
-    def _process_generated_words(self, words: List[str]) -> List[str]:
+    def _process_generated_words(self, words: list[str]) -> list[str]:
         """Process generated words, ensuring they're lowercase."""
         lowercase_words = [word.lower() for word in words]
         return super()._process_generated_words(lowercase_words)

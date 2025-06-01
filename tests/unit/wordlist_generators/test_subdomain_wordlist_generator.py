@@ -11,7 +11,6 @@ from wordlist_generators.subdomain_wordlist_generator import (
 
 
 class TestSubdomainWordlistGenerator:
-
     @pytest.fixture
     def generator(self):
         return SubdomainWordlistGenerator()

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 
 class LlmProvider(Enum):
@@ -14,7 +14,7 @@ class LlmProvider(Enum):
     OPEN_ROUTER = ("openrouter", "OpenRouter", "OPENROUTER_API_KEY")
     CUSTOM = ("custom", "Custom", "CUSTOM_API_KEY")
 
-    def __init__(self, internal_name: str, display_name: str, env_var: Optional[str]):
+    def __init__(self, internal_name: str, display_name: str, env_var: str | None):
         self.internal_name = internal_name
         self.display_name = display_name
         self.env_var = env_var
@@ -29,7 +29,7 @@ class LlmProvider(Enum):
         return None
 
     @classmethod
-    def requiring_api_keys(cls) -> List["LlmProvider"]:
+    def requiring_api_keys(cls) -> list["LlmProvider"]:
         """Get all providers that require API keys."""
         return [p for p in cls if p.env_var is not None]
 
@@ -43,11 +43,11 @@ class LlmProvider(Enum):
 class LlmConfig:
     """Configuration for an LLM service."""
 
-    api_key: Optional[str] = None
-    api_url: Optional[str] = None
+    api_key: str | None = None
+    api_url: str | None = None
     timeout: int = 30
     max_retries: int = 3
-    additional_params: Optional[Dict[str, Any]] = None
+    additional_params: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.additional_params is None:
@@ -96,7 +96,7 @@ class LlmService(ABC):
         """Make the API call to the LLM."""
         pass
 
-    def generate_words(self, prompt: str, expected_count: int) -> List[str]:
+    def generate_words(self, prompt: str, expected_count: int) -> list[str]:
         """Generate a list of words from the LLM."""
         # Token estimation with safety margin
         prompt_tokens = len(prompt.split()) * 1.5
@@ -115,7 +115,7 @@ class LlmService(ABC):
 
         return self._parse_word_list(raw_response)
 
-    def _parse_word_list(self, response: str) -> List[str]:
+    def _parse_word_list(self, response: str) -> list[str]:
         """Parse the LLM response into a list of words."""
         # Split by newlines and clean up
         lines = response.strip().split("\n")

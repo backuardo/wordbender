@@ -2,7 +2,6 @@ import importlib
 import inspect
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Type
 
 from rich.console import Console
 
@@ -17,9 +16,9 @@ class ServiceDiscovery:
     """Discovers available services from the filesystem."""
 
     @staticmethod
-    def discover_wordlist_generators() -> Dict[str, Type[WordlistGenerator]]:
+    def discover_wordlist_generators() -> dict[str, type[WordlistGenerator]]:
         """Dynamically discover all wordlist generator classes."""
-        generators = {}
+        generators: dict[str, type[WordlistGenerator]] = {}
         generator_dir = Path("wordlist_generators")
 
         try:
@@ -54,9 +53,9 @@ class ServiceDiscovery:
         return generators
 
     @staticmethod
-    def discover_llm_services() -> Dict[str, Dict[str, Type[LlmService]]]:
+    def discover_llm_services() -> dict[str, dict[str, type[LlmService]]]:
         """Dynamically discover all LLM service classes grouped by provider."""
-        services = {}
+        services: dict[str, dict[str, type[LlmService]]] = {}
         service_dir = Path("llm_services")
 
         try:
@@ -99,7 +98,7 @@ class ServiceDiscovery:
         return services
 
     @staticmethod
-    def _get_provider_name(service_class: Type[LlmService]) -> Optional[str]:
+    def _get_provider_name(service_class: type[LlmService]) -> str | None:
         """Get provider name from service class by instantiating it."""
         try:
             dummy_config = LlmConfig(api_key="dummy")
@@ -143,13 +142,13 @@ class GeneratorFactory:
         self._generators = ServiceDiscovery.discover_wordlist_generators()
 
     @property
-    def available_types(self) -> List[str]:
+    def available_types(self) -> list[str]:
         """Get list of available generator types."""
-        return sorted(list(self._generators.keys()))
+        return sorted(self._generators.keys())
 
     def create(
-        self, generator_type: str, output_file: Optional[Path] = None
-    ) -> Optional[WordlistGenerator]:
+        self, generator_type: str, output_file: Path | None = None
+    ) -> WordlistGenerator | None:
         """Create a generator instance by type."""
         generator_class = self._generators.get(generator_type)
         if not generator_class:
@@ -178,17 +177,15 @@ class LlmServiceFactory:
         self._services = ServiceDiscovery.discover_llm_services()
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> list[str]:
         """Get list of available providers that have implementations."""
-        return sorted(list(self._services.keys()))
+        return sorted(self._services.keys())
 
-    def get_available_models(self, provider: str) -> List[str]:
+    def get_available_models(self, provider: str) -> list[str]:
         """Get available models for a provider."""
-        return sorted(list(self._services.get(provider, {}).keys()))
+        return sorted(self._services.get(provider, {}).keys())
 
-    def create(
-        self, provider: str, model: Optional[str] = None
-    ) -> Optional[LlmService]:
+    def create(self, provider: str, model: str | None = None) -> LlmService | None:
         """Create an LLM service instance."""
         provider_services = self._services.get(provider, {})
         if not provider_services:
@@ -234,17 +231,21 @@ class LlmServiceFactory:
     def _determine_model(
         self,
         provider: str,
-        requested_model: Optional[str],
-        available_models: Dict[str, Type[LlmService]],
-    ) -> Optional[str]:
+        requested_model: str | None,
+        available_models: dict[str, type[LlmService]],
+    ) -> str | None:
         """Determine which model to use based on request and preferences."""
         if requested_model and requested_model in available_models:
             return requested_model
 
         prefs = self._config.get_preferences()
         default_model = prefs.get(f"default_{provider}_model")
-        if default_model and default_model in available_models:
-            return default_model
+        if (
+            default_model
+            and isinstance(default_model, str)
+            and default_model in available_models
+        ):
+            return str(default_model)
 
         if available_models:
             return next(iter(available_models.keys()))

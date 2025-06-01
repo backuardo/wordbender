@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
 
 from wordlist_generators.prompt_templates import (
     PromptTemplate,
@@ -17,7 +16,7 @@ class PasswordWordlistGenerator(WordlistGenerator):
     MAX_LENGTH = 30
     VALID_CHARS_PATTERN = re.compile(r"^[a-zA-Z0-9]+$")
 
-    def __init__(self, output_file: Optional[Path] = None):
+    def __init__(self, output_file: Path | None = None):
         super().__init__(output_file)
 
     def _get_default_output_path(self) -> Path:
@@ -113,10 +112,9 @@ class PasswordWordlistGenerator(WordlistGenerator):
             "(birthdays, anniversaries, graduation years)",
             "Personal relationships (family members, pets, close friends)",
             "Geographic connections (hometowns, places lived, vacation spots)",
-            "Personal interests and passions " "(hobbies, sports teams, music, movies)",
+            "Personal interests and passions (hobbies, sports teams, music, movies)",
             "Professional context (employers, job roles, departments, projects)",
-            "Meaningful numbers and identifiers "
-            "(area codes, lucky numbers, addresses)",
+            "Meaningful numbers and identifiers (area codes, lucky numbers, addresses)",
         ]
         intelligence_context = (
             "The seed words represent personal intelligence about the target "

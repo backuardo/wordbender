@@ -15,7 +15,6 @@ MIN_WORD_LENGTH = 3
 
 
 class ConcreteWordlistGenerator(WordlistGenerator):
-
     def _get_default_output_path(self) -> Path:
         return Path(TEST_WORDLIST_FILE)
 
@@ -33,7 +32,6 @@ class ConcreteWordlistGenerator(WordlistGenerator):
 
 
 class TestWordlistGenerator:
-
     @pytest.fixture
     def generator(self):
         return ConcreteWordlistGenerator()
@@ -284,7 +282,7 @@ class TestWordlistGenerator:
         assert "valid" in generator.seed_words
         assert "also_valid" in generator.seed_words
 
-    @patch("pathlib.Path.open", side_effect=IOError("Permission denied"))
+    @patch("pathlib.Path.open", side_effect=OSError("Permission denied"))
     def test_save_write_error(self, mock_open, generator, tmp_path):
         generator._generated_words = ["word1"]
 

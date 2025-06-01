@@ -11,7 +11,6 @@ from wordlist_generators.subdomain_wordlist_generator import (
 
 
 class TestGenerationFlow:
-
     @pytest.fixture
     def mock_config(self):
         config = Mock(spec=Config)
@@ -111,7 +110,7 @@ class TestGenerationFlow:
                 {
                     "message": {
                         "content": (
-                            "testword1\ntestword2\ntestword3\n" "testword4\ntestword5"
+                            "testword1\ntestword2\ntestword3\ntestword4\ntestword5"
                         )
                     }
                 }
@@ -126,6 +125,7 @@ class TestGenerationFlow:
         generator = gen_factory.create("password", output_file)
         llm_service = llm_factory.create("openrouter", "claude-opus")
 
+        assert generator is not None
         generator.add_seed_words("test", "seed", "words")
         generator.wordlist_length = 5
 

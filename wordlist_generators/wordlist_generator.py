@@ -1,25 +1,24 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional
 
 
 class WordlistGenerator(ABC):
     """Abstract base class for generating targeted wordlists."""
 
-    def __init__(self, output_file: Optional[Path] = None):
-        self._seed_words: List[str] = []
-        self._generated_words: List[str] = []
+    def __init__(self, output_file: Path | None = None):
+        self._seed_words: list[str] = []
+        self._generated_words: list[str] = []
         self._output_file = output_file or self._get_default_output_path()
         self._wordlist_length = 100
-        self._additional_instructions: Optional[str] = None
+        self._additional_instructions: str | None = None
 
     @property
-    def seed_words(self) -> List[str]:
+    def seed_words(self) -> list[str]:
         """Get the current seed words."""
         return self._seed_words.copy()
 
     @property
-    def generated_words(self) -> List[str]:
+    def generated_words(self) -> list[str]:
         """Get the generated words."""
         return self._generated_words.copy()
 
@@ -46,12 +45,12 @@ class WordlistGenerator(ABC):
         self._output_file = path
 
     @property
-    def additional_instructions(self) -> Optional[str]:
+    def additional_instructions(self) -> str | None:
         """Get additional instructions for the LLM."""
         return self._additional_instructions
 
     @additional_instructions.setter
-    def additional_instructions(self, value: Optional[str]) -> None:
+    def additional_instructions(self, value: str | None) -> None:
         """Set additional instructions for the LLM."""
         self._additional_instructions = value
 
@@ -110,14 +109,14 @@ class WordlistGenerator(ABC):
 
         return base_prompt
 
-    def generate(self, llm_service) -> List[str]:
+    def generate(self, llm_service) -> list[str]:
         """Generate the wordlist using the provided LLM service."""
         prompt = self.build_prompt()
 
         try:
             raw_words = llm_service.generate_words(prompt, self._wordlist_length)
         except Exception as e:
-            raise RuntimeError(f"Failed to generate words from LLM: {e}")
+            raise RuntimeError(f"Failed to generate words from LLM: {e}") from e
 
         if not raw_words:
             raise ValueError("LLM returned empty response")
@@ -129,7 +128,7 @@ class WordlistGenerator(ABC):
 
         return self.generated_words
 
-    def _process_generated_words(self, words: List[str]) -> List[str]:
+    def _process_generated_words(self, words: list[str]) -> list[str]:
         """Process and validate generated words."""
         seen = set()
         processed = []
@@ -155,7 +154,7 @@ class WordlistGenerator(ABC):
 
         return processed
 
-    def save(self, path: Optional[Path] = None, append: bool = False) -> None:
+    def save(self, path: Path | None = None, append: bool = False) -> None:
         """Save the generated wordlist to a file."""
         if not self._generated_words:
             raise ValueError("No words have been generated")
@@ -166,14 +165,16 @@ class WordlistGenerator(ABC):
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            raise IOError(f"Failed to create directory {output_path.parent}: {e}")
+            raise OSError(
+                f"Failed to create directory {output_path.parent}: {e}"
+            ) from e
 
         mode = "a" if append else "w"
         try:
             with output_path.open(mode, encoding="utf-8") as f:
                 for word in self._generated_words:
                     f.write(f"{word}\n")
-        except IOError as e:
-            raise IOError(f"Failed to write to file {output_path}: {e}")
+        except OSError as e:
+            raise OSError(f"Failed to write to file {output_path}: {e}") from e
         except UnicodeEncodeError as e:
-            raise ValueError(f"Failed to encode word to UTF-8: {e}")
+            raise ValueError(f"Failed to encode word to UTF-8: {e}") from e

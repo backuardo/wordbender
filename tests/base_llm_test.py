@@ -15,7 +15,6 @@ from tests.test_constants import (
 
 
 class BaseLlmServiceTest:
-
     def setup_basic_config(self):
         from llm_services.llm_service import LlmConfig
 

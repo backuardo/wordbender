@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 import click
 from prompt_toolkit import prompt
@@ -140,9 +139,9 @@ class BatchProcessor:
         self,
         input_file: Path,
         wordlist_type: str,
-        output: Optional[Path],
+        output: Path | None,
         length: int,
-        provider: Optional[str],
+        provider: str | None,
         batch_size: int,
         dry_run: bool = False,
     ):
@@ -173,10 +172,10 @@ class BatchProcessor:
                 output_path = output or Path(f"{wordlist_type}_batch_wordlist.txt")
                 self._save_results(all_words, output_path)
 
-    def _load_seed_words(self, input_file: Path) -> List[str]:
+    def _load_seed_words(self, input_file: Path) -> list[str]:
         """Load seed words from file."""
         try:
-            with open(input_file, "r", encoding="utf-8") as f:
+            with open(input_file, encoding="utf-8") as f:
                 seed_words = [line.strip() for line in f if line.strip()]
             if not seed_words:
                 console.print("[red]No seed words found in file[/red]")
@@ -204,7 +203,7 @@ class BatchProcessor:
             return False
         return True
 
-    def _select_provider(self, provider: Optional[str]) -> Optional[str]:
+    def _select_provider(self, provider: str | None) -> str | None:
         """Select and validate provider."""
         provider_name = self.config.select_provider(provider)
         if not provider_name:
@@ -213,12 +212,12 @@ class BatchProcessor:
 
     def _process_all_batches(
         self,
-        seed_words: List[str],
+        seed_words: list[str],
         wordlist_type: str,
         length: int,
         provider_name: str,
         batch_size: int,
-    ) -> List[str]:
+    ) -> list[str]:
         """Process all batches of seed words."""
         all_words = []
 
@@ -229,7 +228,6 @@ class BatchProcessor:
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             console=console,
         ) as progress:
-
             task_id = progress.add_task("Processing batches...", total=len(seed_words))
 
             for i in range(0, len(seed_words), batch_size):
@@ -250,8 +248,8 @@ class BatchProcessor:
         return all_words
 
     def _process_single_batch(
-        self, batch: List[str], wordlist_type: str, length: int, provider_name: str
-    ) -> List[str]:
+        self, batch: list[str], wordlist_type: str, length: int, provider_name: str
+    ) -> list[str]:
         """Process a single batch of seed words."""
         try:
             generator = self.generator_factory.create(wordlist_type)
@@ -281,7 +279,7 @@ class BatchProcessor:
             )
             return []
 
-    def _save_results(self, words: List[str], output_path: Path):
+    def _save_results(self, words: list[str], output_path: Path):
         """Save the combined results."""
         unique_words = list(dict.fromkeys(words))
 
@@ -311,12 +309,12 @@ class BatchProcessor:
 
     def _show_dry_run_batch(
         self,
-        seed_words: List[str],
+        seed_words: list[str],
         wordlist_type: str,
         length: int,
         provider_name: str,
         batch_size: int,
-        output: Optional[Path],
+        output: Path | None,
     ):
         """Show what would be done in a dry run."""
         console.print("\n[yellow]DRY RUN MODE - No words will be generated[/yellow]\n")

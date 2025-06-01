@@ -6,7 +6,6 @@ from cli.commands import BatchProcessor
 
 
 class TestBatchProcessingDryRun:
-
     @pytest.fixture
     def mock_config(self):
         config = Mock()
@@ -21,7 +20,7 @@ class TestBatchProcessingDryRun:
 
         mock_generator = Mock()
         mock_generator.build_prompt.return_value = "test prompt"
-        processor.generator_factory.create = Mock(return_value=mock_generator)
+        processor.generator_factory.create = Mock(return_value=mock_generator)  # type: ignore
 
         return processor
 

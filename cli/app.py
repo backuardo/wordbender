@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -39,7 +38,7 @@ version {__version__}
 class WordbenderApp:
     """Main CLI application controller."""
 
-    def __init__(self, log_level: Optional[str] = None):
+    def __init__(self, log_level: str | None = None):
         self.config = Config()
         self.generator_factory = GeneratorFactory()
         self.llm_factory = LlmServiceFactory(self.config)
@@ -73,8 +72,8 @@ class WordbenderApp:
         self,
         generator: WordlistGenerator,
         llm_service: LlmService,
-        seed_words: List[str],
-        options: Dict,
+        seed_words: list[str],
+        options: dict,
     ) -> bool:
         """Generate a wordlist with the given parameters."""
         for word in seed_words:
@@ -101,9 +100,6 @@ class WordbenderApp:
                 spinner.text = "Generating wordlist..."
                 words = generator.generate(llm_service)
                 spinner.ok("✓")
-                if words is None:
-                    console.print("[red]No words generated[/red]")
-                    return False
                 console.print(f"[green]Generated {len(words)} unique words[/green]")
 
                 if len(words) <= 20:
@@ -136,8 +132,8 @@ class WordbenderApp:
         self,
         generator: WordlistGenerator,
         llm_service: LlmService,
-        seed_words: List[str],
-        options: Dict,
+        seed_words: list[str],
+        options: dict,
     ) -> bool:
         """Show what would be done in dry run mode."""
         console.print("\n[yellow]DRY RUN MODE - No words will be generated[/yellow]\n")
@@ -239,10 +235,10 @@ class WordbenderApp:
     def _display_generation_summary(
         self,
         wordlist_type: str,
-        seed_words: List[str],
-        options: Dict,
+        seed_words: list[str],
+        options: dict,
         provider: str,
-        model: Optional[str],
+        model: str | None,
     ):
         """Display a summary of the generation parameters."""
         console.print("\n[bold]Generation Summary:[/bold]")

@@ -21,7 +21,6 @@ DEFAULT_TITLE = "Wordlist Generator"
 
 
 class TestOpenRouterLlmService:
-
     @pytest.fixture
     def config(self):
         return LlmConfig(api_key=TEST_API_KEY, timeout=30, max_retries=3)
@@ -74,7 +73,7 @@ class TestOpenRouterLlmService:
         assert req.headers["HTTP-Referer"] == DEFAULT_REFERER
         assert req.headers["X-Title"] == DEFAULT_TITLE
 
-        body = json.loads(req.body)
+        body = json.loads(req.body or "")
         assert body["model"] == TEST_MODEL_NAME
         assert body["messages"][0]["content"] == "test prompt"
         assert body["max_tokens"] == 100
@@ -250,7 +249,6 @@ class TestOpenRouterLlmService:
 
 
 class TestOpenRouterClaudeOpusLlmService:
-
     def test_model_name(self):
         config = LlmConfig(api_key=TEST_API_KEY)
         service = OpenRouterClaudeOpusLlmService(config)
@@ -258,7 +256,6 @@ class TestOpenRouterClaudeOpusLlmService:
 
 
 class TestOpenRouterGpt4LlmService:
-
     def test_model_name(self):
         config = LlmConfig(api_key=TEST_API_KEY)
         service = OpenRouterGpt4LlmService(config)

@@ -12,7 +12,6 @@ GENERATED_WORDS = ["generated1", "generated2", "generated3"]
 
 
 class TestBatchProcessing:
-
     @pytest.fixture
     def mock_config(self):
         config = Mock(spec=Config)
@@ -31,7 +30,7 @@ class TestBatchProcessing:
 
         mock_llm = Mock()
         mock_llm.generate_words.return_value = GENERATED_WORDS
-        processor.llm_factory.create = Mock(return_value=mock_llm)
+        processor.llm_factory.create = Mock(return_value=mock_llm)  # type: ignore
 
         return processor
 

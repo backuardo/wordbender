@@ -24,7 +24,6 @@ from wordlist_generators.subdomain_wordlist_generator import (
 
 
 class TestServiceDiscovery:
-
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.glob")
     def test_discover_wordlist_generators_success(self, mock_glob, mock_exists):
@@ -121,14 +120,14 @@ class TestServiceDiscovery:
         class AnthropicTestService:
             pass
 
-        result = ServiceDiscovery._get_provider_name(AnthropicTestService)
+        result = ServiceDiscovery._get_provider_name(AnthropicTestService)  # type: ignore
         assert result == "anthropic"
 
     def test_get_provider_name_unknown(self):
         class UnknownService:
             pass
 
-        result = ServiceDiscovery._get_provider_name(UnknownService)
+        result = ServiceDiscovery._get_provider_name(UnknownService)  # type: ignore
         assert result is None
 
     @pytest.mark.parametrize(
@@ -147,7 +146,6 @@ class TestServiceDiscovery:
 
 
 class TestGeneratorFactory:
-
     @patch.object(ServiceDiscovery, "discover_wordlist_generators")
     def test_factory_initialization_and_discovery(self, mock_discover):
         mock_discover.return_value = {
@@ -179,7 +177,7 @@ class TestGeneratorFactory:
         factory = GeneratorFactory()
         output_file = Path("/custom/output.txt")
         generator = factory.create("password", output_file)
-
+        assert generator is not None
         assert generator.output_file == output_file
 
     @patch.object(ServiceDiscovery, "discover_wordlist_generators")
@@ -227,7 +225,6 @@ class TestGeneratorFactory:
 
 
 class TestLlmServiceFactory:
-
     @pytest.fixture
     def mock_config(self):
         config = Mock(spec=Config)
@@ -350,7 +347,7 @@ class TestLlmServiceFactory:
         factory = LlmServiceFactory(mock_config)
         available = {"model1": Mock(), "model2": Mock()}
 
-        result = factory._determine_model("provider", "model1", available)
+        result = factory._determine_model("provider", "model1", available)  # type: ignore
         assert result == "model1"
 
     def test_determine_model_default_preference(self, mock_config):
@@ -359,19 +356,19 @@ class TestLlmServiceFactory:
         factory = LlmServiceFactory(mock_config)
         available = {"model1": Mock(), "model2": Mock()}
 
-        result = factory._determine_model("provider", None, available)
+        result = factory._determine_model("provider", None, available)  # type: ignore
         assert result == "model2"
 
     def test_determine_model_first_available(self, mock_config):
         factory = LlmServiceFactory(mock_config)
         available = {"model1": Mock(), "model2": Mock()}
 
-        result = factory._determine_model("provider", None, available)
+        result = factory._determine_model("provider", None, available)  # type: ignore
         assert result == "model1"
 
     def test_determine_model_none_available(self, mock_config):
         factory = LlmServiceFactory(mock_config)
-        available = {}
+        available: dict[str, type] = {}
 
         result = factory._determine_model("provider", None, available)
         assert result is None

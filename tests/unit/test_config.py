@@ -10,7 +10,6 @@ from llm_services.llm_service import LlmProvider
 
 
 class TestConfig:
-
     @pytest.fixture
     def temp_env_file(self, tmp_path):
         env_file = tmp_path / ".env"

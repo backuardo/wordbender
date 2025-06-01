@@ -9,7 +9,6 @@ from wordlist_generators.password_wordlist_generator import PasswordWordlistGene
 
 
 class TestPasswordWordlistGenerator:
-
     @pytest.fixture
     def generator(self):
         return PasswordWordlistGenerator()

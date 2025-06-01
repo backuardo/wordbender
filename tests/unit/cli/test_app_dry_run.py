@@ -7,7 +7,6 @@ from llm_services.llm_service import LlmProvider
 
 
 class TestWordlistGenerationDryRun:
-
     @pytest.fixture
     def app(self):
         return WordbenderApp()

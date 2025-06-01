@@ -13,7 +13,6 @@ TEST_TEMPERATURE = 0.7
 
 
 class ConcreteLlmService(LlmService):
-
     def __init__(self, config: LlmConfig, model_name: str = TEST_MODEL_NAME):
         self._model_name = model_name
         super().__init__(config)
@@ -31,7 +30,6 @@ class ConcreteLlmService(LlmService):
 
 
 class TestLlmProvider:
-
     def test_provider_enum_behavior(self):
         openai = LlmProvider.OPEN_AI
         assert openai.requires_api_key
@@ -64,7 +62,6 @@ class TestLlmProvider:
 
 
 class TestLlmConfig:
-
     def test_config_defaults_and_customization(self):
         default_config = LlmConfig()
         assert default_config.api_key is None
@@ -97,7 +94,6 @@ class TestLlmConfig:
 
 
 class TestLlmService:
-
     @pytest.fixture
     def valid_config(self):
         return LlmConfig(api_key=TEST_API_KEY)

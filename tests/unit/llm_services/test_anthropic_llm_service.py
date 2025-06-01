@@ -22,7 +22,6 @@ CONTENT_TYPE = "application/json"
 
 
 class TestAnthropicLlmService:
-
     @pytest.fixture
     def config(self):
         return LlmConfig(api_key=TEST_API_KEY, timeout=30, max_retries=3)
@@ -84,7 +83,7 @@ class TestAnthropicLlmService:
         assert req.headers["content-type"] == CONTENT_TYPE
         assert req.headers["anthropic-version"] == ANTHROPIC_VERSION
 
-        body = json.loads(req.body)
+        body = json.loads(req.body or "")
         assert body["model"] == TEST_MODEL_NAME
         assert body["messages"][0]["content"] == "test prompt"
 
@@ -249,7 +248,6 @@ class TestAnthropicLlmService:
 
 
 class TestAnthropicModelServices:
-
     @pytest.fixture
     def config(self):
         return LlmConfig(api_key=TEST_API_KEY)

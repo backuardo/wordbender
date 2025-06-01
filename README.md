@@ -5,7 +5,10 @@
 [![CI](https://github.com/backuardo/wordbender/actions/workflows/ci.yml/badge.svg)](https://github.com/backuardo/wordbender/actions/workflows/ci.yml)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![MyPy checked](https://img.shields.io/badge/mypy-checked-blue)](https://mypy-lang.org/)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 Extensible LLM-powered wordlist generator for penetration testing. Creates intelligent, context-aware wordlists using AI to understand seed word relationships. Highly configurable with support for multiple wordlist types and LLM providers.
 
@@ -319,8 +322,8 @@ Words that don't meet criteria are automatically filtered out.
 ### Running Tests
 
 ```bash
-# Install test dependencies
-uv sync --group test
+# Install test dependencies (and dev tools)
+uv sync --group dev --group test
 
 # Run all tests
 uv run pytest
@@ -357,16 +360,31 @@ The test suite is organized into:
   - Configuration and API key management
   - Batch processing
 
+### Development Tools
+
+This project uses modern Python development tools for code quality:
+
+- **Ruff**: Fast linter and formatter (replaces black, isort, flake8)
+- **MyPy**: Static type checking for better code reliability
+- **Bandit**: Security vulnerability scanning
+- **Pre-commit**: Automated hooks to run tools before commits
+
 ### Running Development Tools
 
 ```bash
-# Format code, sort imports, and lint
-uv run isort . && uv run black . && uv run flake8 .
+# Format, lint, and type check code (run before committing)
+uv run ruff check --fix . && uv run ruff format . && uv run mypy . && uv run bandit -c pyproject.toml -r .
 
 # Individual tools
-uv run black .      # Format code
-uv run isort .      # Sort imports
-uv run flake8 .     # Run linter
+uv run ruff format .    # Format code
+uv run ruff check .     # Lint code
+uv run ruff check --fix . # Lint and fix issues
+uv run mypy .           # Type checking
+uv run bandit -c pyproject.toml -r . # Security linting
+
+# Pre-commit hooks (recommended)
+uv run pre-commit install      # Install hooks
+uv run pre-commit run --all-files  # Run all hooks manually
 ```
 
 ### Adding New Wordlist Types

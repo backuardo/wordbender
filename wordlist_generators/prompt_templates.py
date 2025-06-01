@@ -1,5 +1,4 @@
 from textwrap import dedent
-from typing import Dict, List, Optional
 
 
 class PromptTemplate:
@@ -14,12 +13,12 @@ class PromptTemplate:
     def create_prompt(
         role: str,
         task: str,
-        context: Optional[str] = None,
-        methodology: Optional[str] = None,
-        input_spec: Optional[str] = None,
-        output_requirements: Optional[str] = None,
-        constraints: Optional[str] = None,
-        additional_sections: Optional[Dict[str, str]] = None,
+        context: str | None = None,
+        methodology: str | None = None,
+        input_spec: str | None = None,
+        output_requirements: str | None = None,
+        constraints: str | None = None,
+        additional_sections: dict[str, str] | None = None,
     ) -> str:
         """
         Create a structured prompt with consistent XML-like formatting.
@@ -65,14 +64,14 @@ class PromptTemplate:
         return "\n\n".join(sections)
 
     @staticmethod
-    def format_list(items: List[str], bullet: str = "-") -> str:
+    def format_list(items: list[str], bullet: str = "-") -> str:
         """Format a list of items with consistent indentation."""
         return "\n".join(f"{bullet} {item}" for item in items)
 
     @staticmethod
-    def format_numbered_list(items: List[str]) -> str:
+    def format_numbered_list(items: list[str]) -> str:
         """Format a numbered list with consistent formatting."""
-        return "\n".join(f"{i+1}. {item}" for i, item in enumerate(items))
+        return "\n".join(f"{i + 1}. {item}" for i, item in enumerate(items))
 
 
 class CommonPromptFragments:
@@ -90,7 +89,7 @@ class CommonPromptFragments:
     @staticmethod
     def output_format_requirements(
         count: int, one_per_line: bool = True, no_explanations: bool = True
-    ) -> List[str]:
+    ) -> list[str]:
         """Common output format requirements."""
         requirements = [f"Output exactly {count} items"]
 

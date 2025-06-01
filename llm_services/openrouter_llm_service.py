@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
@@ -25,7 +25,7 @@ class OpenRouterLlmService(LlmService):
         if not self._config.api_url:
             raise RuntimeError("API URL is not configured")
 
-        additional_params: Dict[str, Any] = self._config.additional_params or {}
+        additional_params: dict[str, Any] = self._config.additional_params or {}
         headers = {
             "Authorization": f"Bearer {self._config.api_key}",
             "HTTP-Referer": additional_params.get("referer", "http://localhost"),
@@ -41,7 +41,7 @@ class OpenRouterLlmService(LlmService):
 
         max_retries = self._config.max_retries
         retry_delay = 1.0
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in range(max_retries):
             try:
@@ -78,7 +78,9 @@ class OpenRouterLlmService(LlmService):
                 try:
                     data = response.json()
                 except json.JSONDecodeError as e:
-                    raise RuntimeError(f"Invalid JSON response from OpenRouter: {e}")
+                    raise RuntimeError(
+                        f"Invalid JSON response from OpenRouter: {e}"
+                    ) from e
 
                 # Validate response structure
                 if "choices" not in data or not data["choices"]:
@@ -88,10 +90,10 @@ class OpenRouterLlmService(LlmService):
 
                 # Extract content
                 content = data["choices"][0].get("message", {}).get("content", "")
-                if not content or not content.strip():
+                if not content or not isinstance(content, str) or not content.strip():
                     raise RuntimeError("Empty response content from OpenRouter API")
 
-                return content
+                return str(content)
 
             except Timeout:
                 last_error = RuntimeError(
@@ -120,11 +122,11 @@ class OpenRouterLlmService(LlmService):
                     retry_delay *= 2
                     continue
                 else:
-                    raise last_error
+                    raise last_error from None
 
             except RequestException as e:
                 last_error = RuntimeError(f"OpenRouter API request failed: {e}")
-                raise last_error
+                raise last_error from e
 
             except RuntimeError:
                 # Re-raise our custom runtime errors
@@ -134,7 +136,7 @@ class OpenRouterLlmService(LlmService):
                 last_error = RuntimeError(
                     f"Unexpected error calling OpenRouter API: {type(e).__name__} - {e}"
                 )
-                raise last_error
+                raise last_error from e
 
         # If we exhausted all retries
         if last_error:
