@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-An LLM-powered targeted wordlist generator that creates base wordlists for password cracking and subdomain enumeration tools. Wordbender uses AI language models to generate contextually relevant seed words that are then fed into tools like Hashcat, Gobuster, or ffuf.
+Extensible LLM-powered wordlist generator for penetration testing. Creates intelligent, context-aware wordlists using AI to understand seed word relationships. Highly configurable with support for multiple wordlist types and LLM providers.
 
 ## What This Tool Does
 
