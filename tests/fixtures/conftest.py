@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from ..test_constants import (
+from tests.test_constants import (
     MOCK_ANTHROPIC_RESPONSE,
     MOCK_LLM_RESPONSE,
     MOCK_OPENROUTER_RESPONSE,

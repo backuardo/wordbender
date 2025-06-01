@@ -57,6 +57,7 @@ class TestConfig:
         Config(env_file=tmp_path / ".env")
 
         assert example_file.exists()
+        assert mock_print.call_count >= 1
         mock_print.assert_any_call("\nNo .env file found. Created .env.example")
 
     def test_load_env(self, temp_env_file, monkeypatch):

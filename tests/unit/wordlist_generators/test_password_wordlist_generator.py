@@ -4,9 +4,9 @@ import pytest
 
 from wordlist_generators.password_wordlist_generator import PasswordWordlistGenerator
 
-from ...test_constants import PASSWORD_MAX_LENGTH as MAX_LENGTH
-from ...test_constants import PASSWORD_MIN_LENGTH as MIN_LENGTH
-from ...test_constants import PASSWORD_OUTPUT_FILE as DEFAULT_OUTPUT_FILE
+from tests.test_constants import PASSWORD_MAX_LENGTH as MAX_LENGTH
+from tests.test_constants import PASSWORD_MIN_LENGTH as MIN_LENGTH
+from tests.test_constants import PASSWORD_OUTPUT_FILE as DEFAULT_OUTPUT_FILE
 
 
 class TestPasswordWordlistGenerator:

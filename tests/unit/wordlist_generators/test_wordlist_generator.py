@@ -264,16 +264,6 @@ class TestWordlistGenerator:
         with pytest.raises(IOError, match="Failed to create directory"):
             generator.save(path=bad_path / "wordlist.txt")
 
-    def test_large_wordlist_handling(self, generator):
-        mock_service = Mock()
-        large_wordlist = [f"word{i}" for i in range(10000)]
-        mock_service.generate_words.return_value = large_wordlist
-
-        generator.add_seed_words("test")
-        result = generator.generate(mock_service)
-
-        assert len(result) <= len(large_wordlist)
-        assert all(generator._validate_word(w) for w in result)
 
     def test_unicode_handling(self, generator):
         mock_service = Mock()

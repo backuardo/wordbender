@@ -129,18 +129,11 @@ class TestBatchProcessing:
     def test_batch_with_generator_failure(self, batch_processor, seed_file, tmp_path):
         output_file = tmp_path / "output.txt"
 
-        call_count = 0
-
-        def mock_generate_words(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 2:
-                raise RuntimeError("API error")
-            return GENERATED_WORDS
-
-        batch_processor.llm_factory.create.return_value.generate_words = (
-            mock_generate_words
-        )
+        batch_processor.llm_factory.create.return_value.generate_words.side_effect = [
+            GENERATED_WORDS,
+            RuntimeError("API error"),
+            GENERATED_WORDS,
+        ]
 
         with patch("rich.console.Console.print") as mock_print:
             batch_processor.process(

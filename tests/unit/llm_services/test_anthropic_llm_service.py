@@ -117,8 +117,7 @@ class TestAnthropicLlmService:
             status=200,
         )
 
-        with patch("time.sleep"):
-            result = service._call_api("test", 100)
+        result = service._call_api("test", 100)
         assert result == "success"
         assert len(responses.calls) == 2
 
@@ -202,8 +201,7 @@ class TestAnthropicLlmService:
         )
         mock_post.side_effect = [Timeout(), mock_response]
 
-        with patch("time.sleep"):
-            result = service._call_api("test", 100)
+        result = service._call_api("test", 100)
         assert result == "success"
         assert mock_post.call_count == 2
 
@@ -215,8 +213,7 @@ class TestAnthropicLlmService:
         )
         mock_post.side_effect = [ConnectionError("Network error"), mock_response]
 
-        with patch("time.sleep"):
-            result = service._call_api("test", 100)
+        result = service._call_api("test", 100)
         assert result == "success"
         assert mock_post.call_count == 2
 
@@ -230,8 +227,7 @@ class TestAnthropicLlmService:
             status=200,
         )
 
-        with patch("time.sleep"):
-            result = service._call_api("test", 100)
+        result = service._call_api("test", 100)
         assert result == "success"
         assert len(responses.calls) == 2
 
@@ -246,9 +242,8 @@ class TestAnthropicLlmService:
         service._config.max_retries = 2
         mock_post.side_effect = [Timeout(), Timeout()]
 
-        with patch("time.sleep"):
-            with pytest.raises(RuntimeError, match="Request timeout"):
-                service._call_api("test", 100)
+        with pytest.raises(RuntimeError, match="Request timeout"):
+            service._call_api("test", 100)
 
         assert mock_post.call_count == 2
 

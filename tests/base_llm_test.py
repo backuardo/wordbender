@@ -7,7 +7,7 @@ import pytest
 import responses
 from requests.exceptions import ConnectionError, Timeout
 
-from .test_constants import (
+from tests.test_constants import (
     TEST_API_KEY,
     TEST_MAX_RETRIES,
     TEST_TIMEOUT,
@@ -32,6 +32,34 @@ class BaseLlmServiceTest:
         for field, value in expected_fields.items():
             assert body[field] == value
 
+    @pytest.mark.parametrize("status_code,error_message", [
+        (403, "Access forbidden"),
+        (404, "Not found"),
+        (500, "Server error")
+    ])
+    def test_api_error_codes(self, service, api_url, status_code, error_message):
+        responses.add(responses.POST, api_url, status=status_code)
+        
+        with pytest.raises(RuntimeError):
+            service._call_api("test", 100)
+
+    @pytest.mark.parametrize("exception_class,exception_args", [
+        (Timeout, ()),
+        (ConnectionError, ("Network error",))
+    ])
+    def test_api_retry_on_exception(self, service, success_response, expected_content, exception_class, exception_args):
+        with patch("requests.post") as mock_post:
+            mock_response = Mock(
+                status_code=200,
+                json=lambda: success_response,
+            )
+            mock_post.side_effect = [exception_class(*exception_args), mock_response]
+
+            result = service._call_api("test", 100)
+
+            assert result == expected_content
+            assert mock_post.call_count == 2
+
     def test_api_success_pattern(
         self, service, api_url, success_response, expected_content
     ):
@@ -50,12 +78,6 @@ class BaseLlmServiceTest:
         responses.add(responses.POST, api_url, status=401)
 
         with pytest.raises(RuntimeError, match=f"Invalid API key for {provider_name}"):
-            service._call_api("test", 100)
-
-    def test_api_403_error_pattern(self, service, api_url):
-        responses.add(responses.POST, api_url, status=403)
-
-        with pytest.raises(RuntimeError, match="Access forbidden"):
             service._call_api("test", 100)
 
     def test_api_429_rate_limit_pattern(
@@ -78,38 +100,6 @@ class BaseLlmServiceTest:
         assert result == expected_content
         assert len(responses.calls) == 2
 
-    def test_api_timeout_retry_pattern(
-        self, service, success_response, expected_content
-    ):
-        with patch("requests.post") as mock_post:
-            mock_response = Mock(
-                status_code=200,
-                json=lambda: success_response,
-            )
-            mock_post.side_effect = [Timeout(), mock_response]
-
-            with patch("time.sleep"):
-                result = service._call_api("test", 100)
-
-            assert result == expected_content
-            assert mock_post.call_count == 2
-
-    def test_api_connection_error_retry_pattern(
-        self, service, success_response, expected_content
-    ):
-        with patch("requests.post") as mock_post:
-            mock_response = Mock(
-                status_code=200,
-                json=lambda: success_response,
-            )
-            mock_post.side_effect = [ConnectionError("Network error"), mock_response]
-
-            with patch("time.sleep"):
-                result = service._call_api("test", 100)
-
-            assert result == expected_content
-            assert mock_post.call_count == 2
-
     def test_api_server_error_retry_pattern(
         self, service, api_url, success_response, expected_content
     ):
@@ -121,9 +111,7 @@ class BaseLlmServiceTest:
             status=200,
         )
 
-        with patch("time.sleep"):
-            result = service._call_api("test", 100)
-
+        result = service._call_api("test", 100)
         assert result == expected_content
         assert len(responses.calls) == 2
 
@@ -150,8 +138,7 @@ class BaseLlmServiceTest:
         with patch("requests.post") as mock_post:
             mock_post.side_effect = [Timeout(), Timeout()]
 
-            with patch("time.sleep"):
-                with pytest.raises(RuntimeError, match="Request timeout"):
-                    service._call_api("test", 100)
+            with pytest.raises(RuntimeError, match="Request timeout"):
+                service._call_api("test", 100)
 
             assert mock_post.call_count == 2

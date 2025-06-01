@@ -11,7 +11,7 @@ from wordlist_generators.subdomain_wordlist_generator import (
     SubdomainWordlistGenerator,
 )
 
-from ...test_constants import (
+from tests.test_constants import (
     ANTHROPIC_SERVICE_FILE,
     GENERATOR_DIR,
     LLM_SERVICE_BASE_FILE,

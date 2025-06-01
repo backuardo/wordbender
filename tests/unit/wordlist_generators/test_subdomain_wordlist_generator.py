@@ -6,9 +6,9 @@ from wordlist_generators.subdomain_wordlist_generator import (
     SubdomainWordlistGenerator,
 )
 
-from ...test_constants import SUBDOMAIN_MAX_LENGTH as MAX_LENGTH
-from ...test_constants import SUBDOMAIN_MIN_LENGTH as MIN_LENGTH
-from ...test_constants import SUBDOMAIN_OUTPUT_FILE as DEFAULT_OUTPUT_FILE
+from tests.test_constants import SUBDOMAIN_MAX_LENGTH as MAX_LENGTH
+from tests.test_constants import SUBDOMAIN_MIN_LENGTH as MIN_LENGTH
+from tests.test_constants import SUBDOMAIN_OUTPUT_FILE as DEFAULT_OUTPUT_FILE
 
 
 class TestSubdomainWordlistGenerator:
