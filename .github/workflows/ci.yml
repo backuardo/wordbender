@@ -26,13 +26,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-groups
+        uv sync --group dev --group test
 
-    - name: Run linting
+    - name: Run code quality checks
       run: |
-        uv run isort . --check-only
-        uv run black . --check
-        uv run flake8 .
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run mypy .
+        uv run bandit -c pyproject.toml -r .
 
     - name: Run tests with coverage
       run: |
@@ -61,14 +62,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-groups
+        uv sync --group dev --group test
 
     - name: Run Bandit Security Scan
       run: |
-        uv pip install bandit
-        uv run bandit -r . -ll -i -x './tests,./htmlcov,./.venv' || true
+        uv run bandit -c pyproject.toml -r .
 
     - name: Run Safety Check
       run: |
-        uv pip install safety
-        uv run safety check --json || true
+        uv tool run safety check --json || true

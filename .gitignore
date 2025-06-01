@@ -18,6 +18,7 @@ wheels/
 # Test coverage and reports
 .coverage
 .coveragerc
+coverage.xml
 htmlcov/
 .pytest_cache/
 
