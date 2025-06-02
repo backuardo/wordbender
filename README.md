@@ -14,16 +14,17 @@ Extensible LLM-powered wordlist generator for penetration testing. Creates intel
 
 ## What This Tool Does
 
-Wordbender **does not** crack passwords or discover subdomains directly. Instead, it generates intelligent wordlists based on your input that serve as input for other security tools:
+Wordbender **does not** crack passwords, discover subdomains, or find directories directly. Instead, it generates intelligent wordlists based on your input that serve as input for other security tools:
 
 - **For Password Cracking**: Generates base words that Hashcat will mutate with rules (adding numbers, special characters, capitalization patterns)
 - **For Subdomain Discovery**: Creates potential subdomain names that tools like Gobuster will test against DNS servers
+- **For Directory/File Brute-Forcing**: Generates paths that tools like ffuf, wfuzz, or dirbuster will test on web servers
 
 Think of Wordbender as the "smart wordlist creator" that understands context and relationships, making your other tools more effective.
 
 ## Features
 
-- **Multiple Wordlist Types**: Generate password base words or subdomain names
+- **Multiple Wordlist Types**: Generate password base words, subdomain names, or directory/file paths
 - **AI-Powered Context Understanding**: Uses Claude, GPT-4, and other models to understand relationships between seed words
 - **Smart Word Generation**: Creates semantically related words, variations, and compounds based on your input
 - **Tool-Ready Output**: Generates wordlists in formats directly usable by Hashcat, Gobuster, ffuf, and other tools
@@ -108,6 +109,9 @@ uv run wordbender.py generate password -s john -s smith -s acme -l 200
 # Generate subdomain wordlist
 uv run wordbender.py generate subdomain -s google -s tech -l 100
 
+# Generate directory/file wordlist
+uv run wordbender.py generate directory -s wordpress -s blog -s php -l 200
+
 # Specify output file
 uv run wordbender.py generate password -s admin -o custom_passwords.txt
 
@@ -170,6 +174,13 @@ uv run wordbender.py config --reset
 - **How it's used**: Fed into tools like Gobuster or ffuf that test each word against the target domain
 - **Example flow**: "api-staging" → Gobuster → tests "api-staging.target.com"
 - **Output**: `subdomain_wordlist.txt`
+
+### Directory/File Wordlists
+- **Purpose**: Generate paths for web directory and file brute-forcing
+- **What it creates**: URL-safe paths including directories, files with extensions, and common web patterns
+- **How it's used**: Fed into tools like ffuf, wfuzz, or dirbuster that test each path on the target server
+- **Example flow**: "api/v1/users" → ffuf → tests "https://target.com/api/v1/users"
+- **Output**: `directory_wordlist.txt`
 
 ## Supported LLM Providers and Models
 
@@ -269,6 +280,25 @@ gobuster dns -d acmecorp.com -w acme_subdomains.txt -t 50
 ffuf -u https://FUZZ.acmecorp.com -w acme_subdomains.txt
 ```
 
+6. **Generate directory/file wordlist**:
+```bash
+uv run wordbender.py generate directory \
+  -s acme -s wordpress -s php -s apache -s backup \
+  -l 300 -o acme_directories.txt
+```
+
+7. **Feed into directory brute-forcing tools**:
+```bash
+# Directory enumeration with ffuf
+ffuf -u https://acmecorp.com/FUZZ -w acme_directories.txt -mc 200,301,302,403
+
+# With wfuzz
+wfuzz -c -z file,acme_directories.txt --hc 404 https://acmecorp.com/FUZZ
+
+# With gobuster
+gobuster dir -u https://acmecorp.com -w acme_directories.txt -x php,bak,zip
+```
+
 ### Using Different Providers
 
 ```bash
@@ -314,6 +344,7 @@ If you encounter rate limiting:
 Each wordlist type has specific validation rules:
 - **Passwords**: Only alphanumeric, 3-30 characters
 - **Subdomains**: Lowercase, alphanumeric with hyphens (not at start/end)
+- **Directories**: Alphanumeric, hyphens, underscores, dots, tildes, forward slashes
 
 Words that don't meet criteria are automatically filtered out.
 
