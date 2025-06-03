@@ -158,23 +158,19 @@ class TestServiceDiscovery:
             Path(f"{GENERATOR_DIR}/cloud_resource_wordlist_generator.py"),
         ]
 
-        # Create a mock CloudResourceWordlistGenerator class that inherits from WordlistGenerator
         class MockCloudResourceWordlistGenerator(WordlistGenerator):
             pass
 
-        # Mock module
         mock_module = Mock()
         mock_import.return_value = mock_module
 
-        # Mock inspect.getmembers to return our mock class
         mock_getmembers.return_value = [
             ("CloudResourceWordlistGenerator", MockCloudResourceWordlistGenerator),
-            ("WordlistGenerator", WordlistGenerator),  # This should be skipped
+            ("WordlistGenerator", WordlistGenerator),
         ]
 
         generators = ServiceDiscovery.discover_wordlist_generators()
 
-        # Should convert CloudResourceWordlistGenerator to cloud-resource
         assert "cloud-resource" in generators
         assert generators["cloud-resource"] == MockCloudResourceWordlistGenerator
 
