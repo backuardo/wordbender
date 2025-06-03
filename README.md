@@ -19,12 +19,13 @@ Wordbender **does not** crack passwords, discover subdomains, or find directorie
 - **For Password Cracking**: Generates base words that Hashcat will mutate with rules (adding numbers, special characters, capitalization patterns)
 - **For Subdomain Discovery**: Creates potential subdomain names that tools like Gobuster will test against DNS servers
 - **For Directory/File Brute-Forcing**: Generates paths that tools like ffuf, wfuzz, or dirbuster will test on web servers
+- **For Cloud Resource Enumeration**: Creates realistic cloud resource names (S3 buckets, storage accounts, etc.) that tools like S3Scanner will test
 
 Think of Wordbender as the "smart wordlist creator" that understands context and relationships, making your other tools more effective.
 
 ## Features
 
-- **Multiple Wordlist Types**: Generate password base words, subdomain names, or directory/file paths
+- **Multiple Wordlist Types**: Generate password base words, subdomain names, directory/file paths, or cloud resource names
 - **AI-Powered Context Understanding**: Uses Claude, GPT-4, and other models to understand relationships between seed words
 - **Smart Word Generation**: Creates semantically related words, variations, and compounds based on your input
 - **Tool-Ready Output**: Generates wordlists in formats directly usable by Hashcat, Gobuster, ffuf, and other tools
@@ -112,6 +113,9 @@ uv run wordbender.py generate subdomain -s google -s tech -l 100
 # Generate directory/file wordlist
 uv run wordbender.py generate directory -s wordpress -s blog -s php -l 200
 
+# Generate cloud resource wordlist
+uv run wordbender.py generate cloud-resource -s tesla -s aws -s s3 -l 150
+
 # Specify output file
 uv run wordbender.py generate password -s admin -o custom_passwords.txt
 
@@ -181,6 +185,13 @@ uv run wordbender.py config --reset
 - **How it's used**: Fed into tools like ffuf, wfuzz, or dirbuster that test each path on the target server
 - **Example flow**: "api/v1/users" → ffuf → tests "https://target.com/api/v1/users"
 - **Output**: `directory_wordlist.txt`
+
+### Cloud Resource Wordlists
+- **Purpose**: Generate realistic cloud resource names for enumeration (S3 buckets, storage accounts, etc.)
+- **What it creates**: Cloud provider-compliant resource names using company abbreviations and realistic patterns
+- **How it's used**: Fed into tools like S3Scanner, CloudBrute, or bucket-stream that test for exposed resources
+- **Example flow**: "tesla-backups-prod" → S3Scanner → tests "s3://tesla-backups-prod"
+- **Output**: `cloud_resource_wordlist.txt`
 
 ## Supported LLM Providers and Models
 
@@ -299,6 +310,27 @@ wfuzz -c -z file,acme_directories.txt --hc 404 https://acmecorp.com/FUZZ
 gobuster dir -u https://acmecorp.com -w acme_directories.txt -x php,bak,zip
 ```
 
+8. **Generate cloud resource wordlist**:
+```bash
+uv run wordbender.py generate cloud-resource \
+  -s acme -s acmecorp -s prod -s backup -s data \
+  -l 300 -o acme_cloud_resources.txt
+```
+
+9. **Feed into cloud enumeration tools**:
+```bash
+# S3 bucket enumeration
+python S3Scanner.py --list acme_cloud_resources.txt
+
+# Multi-cloud enumeration
+cloud_enum -k acme_cloud_resources.txt -t 10
+
+# Check specific buckets
+while read bucket; do
+  aws s3 ls s3://$bucket --no-sign-request 2>/dev/null && echo "FOUND: $bucket"
+done < acme_cloud_resources.txt
+```
+
 ### Using Different Providers
 
 ```bash
@@ -345,6 +377,7 @@ Each wordlist type has specific validation rules:
 - **Passwords**: Only alphanumeric, 3-30 characters
 - **Subdomains**: Lowercase, alphanumeric with hyphens (not at start/end)
 - **Directories**: Alphanumeric, hyphens, underscores, dots, tildes, forward slashes
+- **Cloud Resources**: Lowercase, alphanumeric with hyphens and underscores (not at start/end), 3-63 characters
 
 Words that don't meet criteria are automatically filtered out.
 
