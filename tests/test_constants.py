@@ -39,6 +39,7 @@ TEST_MAX_RETRIES = 3
 PASSWORD_OUTPUT_FILE = "password_base_wordlist.txt"
 SUBDOMAIN_OUTPUT_FILE = "subdomain_wordlist.txt"
 DIRECTORY_OUTPUT_FILE = "directory_wordlist.txt"
+CLOUD_RESOURCE_OUTPUT_FILE = "cloud_resource_wordlist.txt"
 TEST_WORDLIST_FILE = "test_wordlist.txt"
 
 # Validation Constants
@@ -48,6 +49,8 @@ SUBDOMAIN_MIN_LENGTH = 1
 SUBDOMAIN_MAX_LENGTH = 63
 DIRECTORY_MIN_LENGTH = 1
 DIRECTORY_MAX_LENGTH = 255
+CLOUD_RESOURCE_MIN_LENGTH = 3
+CLOUD_RESOURCE_MAX_LENGTH = 63
 
 # Test Data
 SAMPLE_SEED_WORDS = ["test", "example", "demo"]
@@ -96,6 +99,7 @@ LLM_SERVICES_DIR = "llm_services"
 PASSWORD_GENERATOR_FILE = "password_wordlist_generator.py"
 SUBDOMAIN_GENERATOR_FILE = "subdomain_wordlist_generator.py"
 DIRECTORY_GENERATOR_FILE = "directory_wordlist_generator.py"
+CLOUD_GENERATOR_FILE = "cloud_wordlist_generator.py"
 OPENROUTER_SERVICE_FILE = "openrouter_llm_service.py"
 ANTHROPIC_SERVICE_FILE = "anthropic_llm_service.py"
 LLM_SERVICE_BASE_FILE = "llm_service.py"
