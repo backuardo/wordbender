@@ -9,7 +9,7 @@ from wordlist_generators.prompt_templates import (
 from wordlist_generators.wordlist_generator import WordlistGenerator
 
 
-class CloudWordlistGenerator(WordlistGenerator):
+class CloudResourceWordlistGenerator(WordlistGenerator):
     """Generator for cloud resource enumeration wordlists."""
 
     MIN_LENGTH = 3

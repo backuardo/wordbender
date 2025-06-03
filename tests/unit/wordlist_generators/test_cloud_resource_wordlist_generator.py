@@ -5,15 +5,15 @@ import pytest
 from tests.test_constants import CLOUD_RESOURCE_MAX_LENGTH as MAX_LENGTH
 from tests.test_constants import CLOUD_RESOURCE_MIN_LENGTH as MIN_LENGTH
 from tests.test_constants import CLOUD_RESOURCE_OUTPUT_FILE as DEFAULT_OUTPUT_FILE
-from wordlist_generators.cloud_wordlist_generator import (
-    CloudWordlistGenerator,
+from wordlist_generators.cloud_resource_wordlist_generator import (
+    CloudResourceWordlistGenerator,
 )
 
 
-class TestCloudWordlistGenerator:
+class TestCloudResourceWordlistGenerator:
     @pytest.fixture
     def generator(self):
-        return CloudWordlistGenerator()
+        return CloudResourceWordlistGenerator()
 
     def test_initialization_behavior(self, generator):
         assert generator.output_file.name == DEFAULT_OUTPUT_FILE
@@ -21,7 +21,7 @@ class TestCloudWordlistGenerator:
         assert generator.MAX_LENGTH == MAX_LENGTH
 
         custom_path = Path("/custom/cloud_resources.txt")
-        custom_generator = CloudWordlistGenerator(output_file=custom_path)
+        custom_generator = CloudResourceWordlistGenerator(output_file=custom_path)
         assert custom_generator.output_file == custom_path
 
     def test_prompt_has_required_placeholders(self, generator):

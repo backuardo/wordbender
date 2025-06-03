@@ -139,9 +139,12 @@ class WordbenderApp:
         console.print("\n[yellow]DRY RUN MODE - No words will be generated[/yellow]\n")
         console.print("[bold]Generation Plan:[/bold]")
         table = Table(show_header=False, box=None)
-        generator_type = generator.__class__.__name__.replace(
-            "WordlistGenerator", ""
-        ).lower()
+        generator_name = generator.__class__.__name__.replace("WordlistGenerator", "")
+        generator_type = ""
+        for i, char in enumerate(generator_name):
+            if i > 0 and char.isupper():
+                generator_type += "-"
+            generator_type += char.lower()
         table.add_row("Generator:", generator_type)
         table.add_row("Seeds:", ", ".join(seed_words))
         table.add_row("Target Length:", str(options.get("length", 100)))

@@ -21,6 +21,7 @@ from wordlist_generators.password_wordlist_generator import PasswordWordlistGene
 from wordlist_generators.subdomain_wordlist_generator import (
     SubdomainWordlistGenerator,
 )
+from wordlist_generators.wordlist_generator import WordlistGenerator
 
 
 class TestServiceDiscovery:
@@ -143,6 +144,39 @@ class TestServiceDiscovery:
     def test_extract_model_name(self, class_name, expected):
         result = ServiceDiscovery._extract_model_name(class_name)
         assert result == expected
+
+    @patch("pathlib.Path.exists")
+    @patch("pathlib.Path.glob")
+    @patch("importlib.import_module")
+    @patch("inspect.getmembers")
+    def test_discover_wordlist_generators_hyphenated_names(
+        self, mock_getmembers, mock_import, mock_glob, mock_exists
+    ):
+        """Test that CamelCase generator names are converted to hyphenated lowercase."""
+        mock_exists.return_value = True
+        mock_glob.return_value = [
+            Path(f"{GENERATOR_DIR}/cloud_resource_wordlist_generator.py"),
+        ]
+
+        # Create a mock CloudResourceWordlistGenerator class that inherits from WordlistGenerator
+        class MockCloudResourceWordlistGenerator(WordlistGenerator):
+            pass
+
+        # Mock module
+        mock_module = Mock()
+        mock_import.return_value = mock_module
+
+        # Mock inspect.getmembers to return our mock class
+        mock_getmembers.return_value = [
+            ("CloudResourceWordlistGenerator", MockCloudResourceWordlistGenerator),
+            ("WordlistGenerator", WordlistGenerator),  # This should be skipped
+        ]
+
+        generators = ServiceDiscovery.discover_wordlist_generators()
+
+        # Should convert CloudResourceWordlistGenerator to cloud-resource
+        assert "cloud-resource" in generators
+        assert generators["cloud-resource"] == MockCloudResourceWordlistGenerator
 
 
 class TestGeneratorFactory:
