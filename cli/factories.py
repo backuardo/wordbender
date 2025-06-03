@@ -42,7 +42,12 @@ class ServiceDiscovery:
                         and issubclass(obj, WordlistGenerator)
                         and obj != WordlistGenerator
                     ):
-                        generator_type = name.replace("WordlistGenerator", "").lower()
+                        generator_name = name.replace("WordlistGenerator", "")
+                        generator_type = ""
+                        for i, char in enumerate(generator_name):
+                            if i > 0 and char.isupper():
+                                generator_type += "-"
+                            generator_type += char.lower()
                         generators[generator_type] = obj
 
             except ImportError as e:
