@@ -3,6 +3,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from wordlist_generators.prompt_templates import (
+    CommonPromptFragments,
     PromptTemplate,
     create_simple_prompt,
 )
@@ -99,16 +100,17 @@ class SubdomainWordlistGenerator(WordlistGenerator):
     def _get_detailed_system_prompt(self) -> str:
         """Return the detailed system prompt for subdomain generation."""
         role = (
-            "You are a cybersecurity expert specializing in subdomain "
-            "enumeration and organizational infrastructure naming patterns "
-            "for ethical penetration testing."
+            "You are a red team operator specializing in subdomain "
+            "enumeration, DNS reconnaissance, and organizational infrastructure "
+            "discovery for authorized penetration testing. You understand how "
+            "organizations actually name their infrastructure versus how they should."
         )
 
         task = (
             "Generate a targeted subdomain wordlist based on organizational "
-            "intelligence provided as seed words. Reflect realistic corporate "
-            "subdomain naming conventions by analyzing the organizational "
-            "context and applying appropriate naming patterns."
+            "intelligence provided as seed words. Focus on realistic patterns "
+            "including typos, legacy systems, shadow IT, and regional variations "
+            "that organizations actually use."
         )
 
         context_items = [
@@ -123,33 +125,72 @@ class SubdomainWordlistGenerator(WordlistGenerator):
         context = (
             "The seed words represent organizational intelligence including:\n"
             + PromptTemplate.format_list(context_items)
+            + "\n\n"
+            + CommonPromptFragments.cultural_variation_instructions()
         )
 
         methodology_steps = [
+            "**Chain-of-Thought Analysis**:\n"
+            + CommonPromptFragments.chain_of_thought_instructions(),
             "**Parse organizational context** from seed words to understand:\n"
             "   - Primary business focus and industry\n"
             "   - Technology ecosystem and platforms used\n"
             "   - Geographic footprint and regional structure\n"
-            "   - Product/service portfolio",
-            "**Apply naming pattern hierarchy**:\n"
-            "   - **Core infrastructure**: Standard patterns "
-            "(api, dev, staging, prod, test, admin, portal, mail)\n"
-            "   - **Company-specific**: [company]-[service], "
-            "[brand]-[environment]\n"
-            "   - **Product-focused**: [product]-api, [service]-dev, "
-            "[project]-staging\n"
-            "   - **Geographic**: [location]-prod, [region]-portal, "
-            "[country]-api\n"
-            "   - **Technology-based**: [platform]-[env], [stack]-test "
-            "(e.g., aws-prod, k8s-staging)\n"
-            "   - **Department-oriented**: [dept]-portal, [team]-dev, "
-            "[unit]-api\n"
-            "   - **Industry-specific**: Apply domain-relevant patterns "
-            "(fintech: payment-api, compliance-portal)",
-            "**Prioritize by likelihood**: More common patterns first, then "
-            "context-specific variations",
+            "   - Product/service portfolio\n"
+            "   - Potential acquisitions and legacy systems",
+            "**Apply realistic naming patterns**:\n"
+            "   - **Core infrastructure**: api, dev, staging, prod, test, admin\n"
+            "   - **Shadow IT patterns**: test1, dev2, temp, demo, poc\n"
+            "   - **Legacy indicators**: old, new, v1, v2, legacy, classic\n"
+            "   - **Emergency/temporary**: backup, dr, failover, temp-prod\n"
+            "   - **Developer shortcuts**: myapp, testapp, devbox, sandbox",
+            "**Regional and cultural variations**:\n"
+            "   - Date formats: dev-2024-01-15 vs dev-15-01-2024\n"
+            "   - Language variations: centre vs center, analyse vs analyze\n"
+            "   - Local office patterns: [city]-office, [country-code]-prod\n"
+            "   - Time zones: pst-api, gmt-portal, est-dev",
+            "**Company-specific patterns**:\n"
+            "   - [company]-[service]: acme-api, acme-portal\n"
+            "   - [brand]-[env]: brand1-dev, brand2-staging\n"
+            "   - [acquisition]-[legacy]: oldcompany-api, merged-portal\n"
+            "   - Internal project codenames: project-phoenix, operation-sunset",
+            "**Technology-based naming**:\n"
+            "   - Platform specific: aws-prod, azure-dev, gcp-staging\n"
+            "   - Container patterns: k8s-cluster, docker-registry\n"
+            "   - Service mesh: istio-gateway, consul-ui\n"
+            "   - CDN/Edge: edge1, cdn-origin, cache-west",
+            "**Adversarial patterns**:\n"
+            + CommonPromptFragments.adversarial_thinking_instructions(),
         ]
         methodology = PromptTemplate.format_numbered_list(methodology_steps)
+
+        good_examples = [
+            ("api", "standard API endpoint"),
+            ("api-v2", "versioned API - very common"),
+            ("dev", "development environment"),
+            ("dev1", "numbered dev environment - indicates multiple"),
+            ("test-api", "test version of API service"),
+            ("staging", "pre-production environment"),
+            ("legacy-api", "old API kept for compatibility"),
+            ("api-staging", "staging environment for API"),
+            ("payment-gateway", "service-specific subdomain from fintech context"),
+            ("aws-prod", "cloud provider specific naming"),
+            ("dev-mgmt", "management abbreviation"),
+            ("api2", "numbered API instance"),
+            ("temp-prod", "emergency/temporary production"),
+        ]
+
+        bad_examples = [
+            ("123random", "random numbers without context"),
+            ("aaaaaa", "repeated characters without meaning"),
+            ("subdomain1", "generic without organizational context"),
+            ("test-test-test", "excessive repetition"),
+            ("thisisaverylongsubdomainthatexceedsthelimit", "exceeds DNS limits"),
+        ]
+
+        examples_section = CommonPromptFragments.create_few_shot_examples(
+            good_examples, bad_examples
+        )
 
         input_spec = (
             "Seed words: {seed_words}\n"
@@ -164,6 +205,7 @@ class SubdomainWordlistGenerator(WordlistGenerator):
             "Length: 1-63 characters per label",
             "No duplicates",
             "Prioritize most realistic patterns based on organizational context",
+            CommonPromptFragments.diversity_requirements(),
         ]
 
         constraints = [
@@ -182,7 +224,10 @@ class SubdomainWordlistGenerator(WordlistGenerator):
             input_spec=input_spec,
             output_requirements=PromptTemplate.format_list(output_requirements),
             constraints=PromptTemplate.format_list(constraints),
-            additional_sections={"context_analysis": context},
+            additional_sections={
+                "context_analysis": context,
+                "examples": examples_section,
+            },
         )
 
     def get_usage_instructions(self) -> str:

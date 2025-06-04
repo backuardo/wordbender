@@ -3,6 +3,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from wordlist_generators.prompt_templates import (
+    CommonPromptFragments,
     PromptTemplate,
     create_simple_prompt,
 )
@@ -107,20 +108,21 @@ class DirectoryWordlistGenerator(WordlistGenerator):
     def _get_detailed_system_prompt(self) -> str:
         """Return the detailed system prompt for directory/file generation."""
         role = (
-            "You are a cybersecurity expert specializing in web application "
-            "reconnaissance and directory/file discovery patterns for ethical "
-            "penetration testing."
+            "You are a red team operator specializing in web application "
+            "reconnaissance, directory traversal, and sensitive file discovery "
+            "for authorized penetration testing. You understand real developer "
+            "behaviors, emergency fixes, and where sensitive data actually lives."
         )
 
         task = (
             "Generate a targeted directory and file wordlist based on technology "
-            "stack and organizational context. Focus on realistic paths that "
-            "developers commonly use, including hidden files, backups, and "
-            "framework-specific directories."
+            "stack and organizational context. Focus on paths developers actually "
+            "create under pressure, including forgotten backups, debug endpoints, "
+            "and framework vulnerabilities."
         )
 
         context_items = [
-            "Web frameworks and CMS platforms (WordPress, Django, etc.)",
+            "Web frameworks and CMS platforms (WordPress, Django, Rails, etc.)",
             "Programming languages and their common patterns",
             "Company names and project identifiers",
             "Application purpose and functionality",
@@ -131,40 +133,83 @@ class DirectoryWordlistGenerator(WordlistGenerator):
         context = (
             "The seed words represent technical and organizational context including:\n"
             + PromptTemplate.format_list(context_items)
+            + "\n\n"
+            + CommonPromptFragments.cultural_variation_instructions()
         )
 
         methodology_steps = [
+            "**Chain-of-Thought Analysis**:\n"
+            + CommonPromptFragments.chain_of_thought_instructions(),
             "**Analyze seed words** to identify:\n"
             "   - Technology indicators (framework names, languages, platforms)\n"
             "   - Organizational terms (company names, product names, project codes)\n"
             "   - Domain context (e-commerce, blog, API service, etc.)\n"
-            "   - Any specific naming patterns or conventions",
-            "**Generate universal path patterns**:\n"
-            "   - **Admin/Management**: admin, dashboard, manage, panel, control\n"
-            "   - **API/Services**: api, api/v1, api/v2, graphql, rest, services\n"
-            "   - **Authentication**: auth, login, signin, logout, register\n"
-            "   - **User areas**: user, users, profile, account, members\n"
-            "   - **Content**: uploads, media, images, files, documents\n"
-            "   - **Development**: dev, test, staging, debug, demo, sandbox\n"
-            "   - **Configuration**: config, settings, setup, install\n"
-            "   - **System**: backup, temp, cache, logs, tmp",
-            "**Apply technology-specific patterns** based on identified stack:\n"
-            "   - If web framework detected, include framework-specific paths\n"
-            "   - If language detected, include common directories for that language\n"
-            "   - If CMS detected, include CMS-specific admin and content paths\n"
-            "   - If build tool detected, include build output directories",
-            "**Include common files with extensions**:\n"
-            "   - Config files: config.json, settings.ini, .env, .htaccess\n"
-            "   - Backups: backup.zip, dump.sql, site.tar.gz, [name].bak\n"
-            "   - Documentation: README.md, changelog.txt, TODO.txt\n"
-            "   - Hidden files: .git/config, .env.local, .DS_Store",
-            "**Create contextual combinations**:\n"
-            "   - Combine seed terms with common patterns\n"
-            "   - Use both single-level and nested paths\n"
-            "   - Include versioned endpoints (v1, v2, 2023, etc.)\n"
-            "   - Mix general and specific paths",
+            "   - Regional/cultural indicators for path variations",
+            "**Developer laziness patterns**:\n"
+            "   - **Quick fixes**: temp, tmp, old, new, backup, test, TODO\n"
+            "   - **Numbered versions**: admin1, backup2, test_v3\n"
+            "   - **Date stamps**: backup_2023, logs_january, dump_01_15\n"
+            "   - **Personal names**: john_backup, dev_mike, sarah_test\n"
+            "**Framework vulnerability paths**:\n"
+            "   - **WordPress**: wp-content/uploads, wp-json, xmlrpc.php\n"
+            "   - **Laravel**: storage/logs, .env, public/vendor\n"
+            "   - **Django**: static/admin, media/uploads, __pycache__\n"
+            "   - **Spring**: actuator/health, swagger-ui, api-docs\n"
+            "   - **Node.js**: node_modules, package-lock.json, .env.local",
+            "**Sensitive file patterns**:\n"
+            "   - **Configs**: .env, .env.prod, config.yml, settings.ini\n"
+            "   - **Backups**: db_backup.sql, dump.tar.gz, site_backup.zip\n"
+            "   - **Version control**: .git/HEAD, .svn/entries, .hg/store\n"
+            "   - **IDE files**: .idea, .vscode, .project, workspace.xml\n"
+            "   - **Cloud**: .aws/credentials, .azure, .gcloud",
+            "**Emergency deployment artifacts**:\n"
+            "   - Copy operations: Copy of admin, admin - Copy\n"
+            "   - Before changes: admin_before_update, pre_migration\n"
+            "   - Quick backups: admin.bak, admin.old, admin_OLD\n"
+            "   - Archive attempts: admin.zip, admin.tar, admin.rar",
+            "**API and debug endpoints**:\n"
+            "   - Debug modes: debug, test, _debug, .debug\n"
+            "   - API versions: api/v1, api/v2, api/internal, api/private\n"
+            "   - GraphQL: graphql, graphiql, playground\n"
+            "   - Health checks: health, status, ping, heartbeat",
+            "**Shadow IT and unofficial paths**:\n"
+            "   - Personal projects: myapp, testproject, demo\n"
+            "   - Proof of concepts: poc, prototype, mvp\n"
+            "   - Migration artifacts: legacy, deprecated, old_site\n"
+            "   - Staging leaks: stage, staging, uat, preprod",
+            "**Adversarial patterns**:\n"
+            + CommonPromptFragments.adversarial_thinking_instructions(),
         ]
         methodology = PromptTemplate.format_numbered_list(methodology_steps)
+
+        good_examples = [
+            ("admin", "standard admin panel path"),
+            ("wp-admin", "WordPress admin - framework specific"),
+            ("backup.zip", "common backup file name"),
+            (".env", "exposed environment file - critical"),
+            ("api/v1/users", "versioned API endpoint"),
+            (".git/config", "exposed git repository"),
+            ("phpinfo.php", "information disclosure file"),
+            ("test", "developer test directory"),
+            ("admin_backup", "admin backup - lazy naming"),
+            ("uploads/2023", "dated upload directory"),
+            ("~admin", "backup file from vim/emacs"),
+            ("admin.bak", "backup with common extension"),
+            ("TODO.txt", "developer notes file"),
+            ("dump.sql", "database dump file"),
+        ]
+
+        bad_examples = [
+            ("/admin", "has leading slash - invalid format"),
+            ("admin/", "has trailing slash - invalid format"),
+            ("../../etc/passwd", "path traversal - not for wordlist"),
+            ("https://example.com", "full URL - not a path"),
+            ("admin?test=1", "has query parameters - invalid"),
+        ]
+
+        examples_section = CommonPromptFragments.create_few_shot_examples(
+            good_examples, bad_examples
+        )
 
         input_spec = (
             "Seed words: {seed_words}\nTarget output length: {wordlist_length} paths"
@@ -173,12 +218,13 @@ class DirectoryWordlistGenerator(WordlistGenerator):
         output_requirements = [
             "Output exactly {wordlist_length} directory/file paths",
             "One path per line, no other text",
-            "Valid URL path characters only (alphanumeric, -, _, ., ~)",
+            "Valid URL path characters only (alphanumeric, -, _, ., ~, /)",
             "No path traversal sequences (..)",
-            "No leading slashes",
+            "No leading or trailing slashes",
             "No duplicates",
             "Mix of directories and files with extensions",
-            "Prioritize most likely paths based on context",
+            "Prioritize high-value targets (configs, backups, version control)",
+            CommonPromptFragments.diversity_requirements(),
         ]
 
         constraints = [
@@ -197,7 +243,10 @@ class DirectoryWordlistGenerator(WordlistGenerator):
             input_spec=input_spec,
             output_requirements=PromptTemplate.format_list(output_requirements),
             constraints=PromptTemplate.format_list(constraints),
-            additional_sections={"context_analysis": context},
+            additional_sections={
+                "context_analysis": context,
+                "examples": examples_section,
+            },
         )
 
     def get_usage_instructions(self) -> str:

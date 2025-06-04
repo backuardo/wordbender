@@ -108,6 +108,74 @@ class CommonPromptFragments:
         """Constraint against generic items unrelated to context."""
         return f"Do NOT include generic {item_type} unrelated to the provided context"
 
+    @staticmethod
+    def adversarial_thinking_instructions() -> str:
+        """Instructions for thinking like an attacker."""
+        return dedent("""
+        Think like a red team operator:
+        - Consider what developers actually use, not what they should use
+        - Remember human laziness and shortcuts
+        - Think about emergency deployments and quick fixes
+        - Remember that people reuse patterns across systems
+        - Think about legacy systems and technical debt
+        """).strip()
+
+    @staticmethod
+    def chain_of_thought_instructions() -> str:
+        """Instructions for demonstrating reasoning process."""
+        return dedent("""
+        For each pattern type, follow this reasoning process:
+        1. Analyze the seed words for context clues
+        2. Identify the likely organization type/industry
+        3. Determine if regional/cultural context is present in seeds
+        4. Apply relevant pattern generation strategies
+        5. Validate against real-world likelihood
+        """).strip()
+
+    @staticmethod
+    def diversity_requirements() -> str:
+        """Requirements for ensuring diverse output."""
+        return dedent("""
+        Ensure output diversity:
+        - 30% common/obvious patterns
+        - 40% mutations and variations
+        - 20% creative/unusual patterns
+        - 10% high-risk/edge cases
+        Avoid clustering similar patterns together.
+        """).strip()
+
+    @staticmethod
+    def cultural_variation_instructions() -> str:
+        """Instructions for incorporating cultural variations."""
+        return dedent("""
+        ONLY if the seed words contain regional/cultural indicators (city names,
+        country names, regional terms, non-English words), then consider:
+        - Language variations (color/colour, center/centre)
+        - Date formats (MM/DD/YYYY vs DD/MM/YYYY)
+        - Regional terminology (elevator/lift, soccer/football)
+        - Local references (sports teams, landmarks)
+        - Transliterations and local language terms
+
+        If no regional context is present in seeds, focus on universal patterns.
+        """).strip()
+
+    @staticmethod
+    def create_few_shot_examples(
+        good_examples: list[tuple[str, str]], bad_examples: list[tuple[str, str]]
+    ) -> str:
+        """Create few-shot examples section with reasoning."""
+        examples = ["Examples with reasoning:\n"]
+
+        examples.append("GOOD examples:")
+        for example, reasoning in good_examples:
+            examples.append(f"✓ {example} - {reasoning}")
+
+        examples.append("\nBAD examples:")
+        for example, reasoning in bad_examples:
+            examples.append(f"✗ {example} - {reasoning}")
+
+        return "\n".join(examples)
+
 
 def create_simple_prompt(system_prompt: str, **kwargs) -> str:
     """

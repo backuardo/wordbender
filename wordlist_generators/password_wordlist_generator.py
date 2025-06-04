@@ -3,6 +3,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from wordlist_generators.prompt_templates import (
+    CommonPromptFragments,
     PromptTemplate,
     create_simple_prompt,
 )
@@ -94,16 +95,17 @@ class PasswordWordlistGenerator(WordlistGenerator):
     def _get_detailed_system_prompt(self) -> str:
         """Return the detailed system prompt for password generation."""
         role = (
-            "You are a cybersecurity expert specializing in password pattern "
+            "You are a red team operator specializing in password pattern "
             "analysis and social engineering-based wordlist generation for "
-            "ethical penetration testing."
+            "authorized penetration testing. You understand how real people "
+            "create passwords under pressure and convenience."
         )
 
         task = (
             "Generate a targeted password base wordlist from personal intelligence "
             "about a specific individual. Focus on realistic human password "
-            "selection behaviors based on personal significance and emotional "
-            "attachment, not linguistic associations."
+            "selection behaviors based on personal significance, emotional "
+            "attachment, and human laziness patterns."
         )
 
         intelligence_items = [
@@ -118,36 +120,75 @@ class PasswordWordlistGenerator(WordlistGenerator):
         ]
         intelligence_context = (
             "The seed words represent personal intelligence about the target "
-            "including:\n" + PromptTemplate.format_list(intelligence_items)
+            "including:\n"
+            + PromptTemplate.format_list(intelligence_items)
+            + "\n\n"
+            + CommonPromptFragments.cultural_variation_instructions()
         )
 
         methodology_parts = [
+            "**Chain-of-Thought Analysis**:\n"
+            + CommonPromptFragments.chain_of_thought_instructions(),
             "**Name variations**: Full names, nicknames, shortened versions, "
             "combinations\n"
-            '   - If "john": include john, johnny, johnnie, johny, jr\n'
-            '   - If "smith": include smith, smiths, smithy',
+            '   - If "john": include john, johnny, johnnie, johny, jr, jsmith\n'
+            '   - If "smith": include smith, smiths, smithy, smitty',
+            "**Keyboard patterns from seeds**:\n"
+            "   - Keyboard walks starting with seed letters\n"
+            "   - Pattern variations using keyboard layout",
             "**Personal significance expansion**:\n"
             "   - Family/pet names and their common variations\n"
-            "   - Favorite teams → team names, mascots, cities, rivalries\n"
-            "   - Hobbies → equipment, terminology, famous figures\n"
-            "   - Places → city names, nicknames, zip codes, area codes",
+            "   - Favorite teams → team names, mascots, cities, rivalries, players\n"
+            "   - Hobbies → equipment, terminology, famous figures, brands\n"
+            "   - Places → city names, nicknames, zip codes, area codes, landmarks",
             "**Emotional connections**:\n"
             "   - Combine related personal elements "
             "(petname + hometown, team + birthyear)\n"
             "   - Important life events and associated terms\n"
-            "   - Childhood memories and references",
+            "   - Childhood memories and references\n"
+            "   - Anniversary combinations",
             "**Professional identity**:\n"
             "   - Company names, abbreviations, department names\n"
-            "   - Job titles, project names, industry terms",
+            "   - Job titles, project names, industry terms\n"
+            "   - Internal project codenames\n"
+            "   - Conference room names, building names",
             "**Common password psychology**:\n"
             "   - Things they're proud of or emotionally attached to\n"
             "   - Easy-to-remember personal combinations\n"
-            "   - Seasonal or temporal references from their life",
+            "   - Seasonal or temporal references from their life\n"
+            "   - Words visible from their desk (monitors, posters, books)",
+            "**Adversarial patterns**:\n"
+            + CommonPromptFragments.adversarial_thinking_instructions(),
         ]
         methodology = (
             "Analyze the personal intelligence to generate words people actually "
             "use in passwords:\n\n"
             + PromptTemplate.format_numbered_list(methodology_parts)
+        )
+
+        good_examples = [
+            ("johnsmith", "combines first and last name - very common pattern"),
+            ("smithjohn", "reversed name combination - people think it's clever"),
+            ("johnny", "nickname variant of john - emotional attachment"),
+            ("fluffy", "pet name from seeds - strong emotional connection"),
+            ("fluffysmith", "pet + lastname - memorable personal combination"),
+            ("chicago", "location from seeds - place attachment"),
+            ("bears", "sports team - passion/interest based"),
+            ("bearsfan", "team + fan - identity expression"),
+            ("may1989", "birth month/year - significant date"),
+            ("accounting", "department from professional context"),
+        ]
+
+        bad_examples = [
+            ("password123", "generic password not related to seeds"),
+            ("qwerty", "keyboard pattern not derived from seeds"),
+            ("admin", "generic term with no personal connection"),
+            ("iloveyou", "common phrase not connected to intelligence"),
+            ("letmein", "generic password unrelated to target"),
+        ]
+
+        examples_section = CommonPromptFragments.create_few_shot_examples(
+            good_examples, bad_examples
         )
 
         input_spec = (
@@ -163,6 +204,7 @@ class PasswordWordlistGenerator(WordlistGenerator):
             "No duplicates",
             "All words must have personal significance to the target based on "
             "provided intelligence",
+            CommonPromptFragments.diversity_requirements(),
         ]
 
         constraints = [
@@ -180,7 +222,10 @@ class PasswordWordlistGenerator(WordlistGenerator):
             input_spec=input_spec,
             output_requirements=PromptTemplate.format_list(output_requirements),
             constraints=PromptTemplate.format_list(constraints),
-            additional_sections={"intelligence_context": intelligence_context},
+            additional_sections={
+                "intelligence_context": intelligence_context,
+                "examples": examples_section,
+            },
         )
 
     def get_usage_instructions(self) -> str:

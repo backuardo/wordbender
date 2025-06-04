@@ -3,6 +3,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from wordlist_generators.prompt_templates import (
+    CommonPromptFragments,
     PromptTemplate,
     create_simple_prompt,
 )
@@ -117,16 +118,17 @@ class CloudResourceWordlistGenerator(WordlistGenerator):
 
     def _get_detailed_system_prompt(self) -> str:
         role = (
-            "You are a cloud security researcher who specializes in discovering "
-            "exposed cloud resources through realistic enumeration techniques. "
-            "You understand how real engineering teams name resources in practice."
+            "You are a red team cloud security specialist who discovers "
+            "exposed cloud resources by understanding how real engineering teams "
+            "name resources during migrations, under deadlines, and when dealing "
+            "with technical debt."
         )
 
         task = (
-            "Generate cloud resource names that real companies would actually use. "
-            "Focus on practical, memorable names that developers create under "
-            "pressure, not theoretical naming standards. Include internal project "
-            "names, abbreviations, and the shortcuts teams really use."
+            "Generate cloud resource names that real companies would actually use, "
+            "including migration artifacts, misconfigured test resources that became "
+            "production, personal developer buckets, and the naming chaos that occurs "
+            "during rapid scaling and cloud migrations."
         )
 
         context_items = [
@@ -142,32 +144,77 @@ class CloudResourceWordlistGenerator(WordlistGenerator):
         context = (
             "Analyze the seed words to understand the organization's context:\n"
             + PromptTemplate.format_list(context_items)
+            + "\n\n"
+            + CommonPromptFragments.cultural_variation_instructions()
         )
 
         methodology_steps = [
+            "**Chain-of-Thought Analysis**:\n"
+            + CommonPromptFragments.chain_of_thought_instructions(),
             "**Extract company identity**:\n"
             "   - Common abbreviations (tesla → tsl, tsla, t)\n"
             "   - Stock tickers, internal codes\n"
-            "   - Project codenames based on company culture",
-            "**Apply realistic naming patterns**:\n"
-            "   - **Quick names**: tsl-temp, auto-test, vehicle-data\n"
-            "   - **Project-based**: autopilot-dev, battery-metrics, fleet-logs\n"
-            "   - **Team ownership**: ml-team-models, mobile-assets, platform-backups\n"
-            "   - **Purpose-driven**: customer-exports, diagnostic-dumps, telemetry-raw\n"
-            "   - **Time-based**: 2024-q1-reports, daily-snapshots, archive-old\n"
-            "   - **Tool-specific**: jenkins-artifacts, terraform-state, k8s-configs",
-            "**Mix predictable and creative names**:\n"
-            "   - Some obvious: tesla-prod-s3, automotive-backup\n"
-            "   - Some abbreviated: tsl-ml, auto-api, veh-data\n"
-            "   - Some internal: project-titan, operation-bluesky\n"
-            "   - Some functional: ota-updates, map-tiles, user-uploads",
-            "**Consider real-world factors**:\n"
-            "   - Developers often use shortcuts and abbreviations\n"
-            "   - Legacy names persist even after reorganizations\n"
-            "   - Internal project names leak into resource naming\n"
-            "   - Convenience often trumps naming standards",
+            "   - Project codenames based on company culture\n"
+            "   - Acquisition names that might persist",
+            "**Migration and misconfiguration patterns**:\n"
+            "   - **Lift-and-shift**: onprem-backup, datacenter-archive, legacy-app\n"
+            "   - **Test-to-prod**: test-bucket-do-not-delete, poc-data, demo-prod\n"
+            "   - **Personal buckets**: john-test, sarah-dev, mike-backup\n"
+            "   - **Temporary-permanent**: temp-logs-2019, quick-fix, hotfix-data\n"
+            "   - **Multi-cloud confusion**: aws-backup-in-azure, gcp-migration",
+            "**Developer convenience patterns**:\n"
+            "   - **Quick names**: test, temp, data, backup, stuff, misc\n"
+            "   - **Numbered iterations**: test1, test2, test-v3, backup-old\n"
+            "   - **Date stamps**: backup-20231225, logs-jan, dump-q1-2024\n"
+            "   - **Copy operations**: prod-copy, backup-of-backup, old-old-data",
+            "**Shadow IT and unofficial resources**:\n"
+            "   - **Side projects**: hackathon-2023, innovation-lab, skunkworks\n"
+            "   - **Department buckets**: marketing-assets, sales-leads, hr-docs\n"
+            "   - **Contractor resources**: vendor-uploads, consultant-data, external\n"
+            "   - **Proof of concepts**: poc-ml, prototype-api, mvp-backend",
+            "**Realistic naming evolution**:\n"
+            "   - Start formal: company-production-data\n"
+            "   - Get abbreviated: comp-prod, cprod, cp-data\n"
+            "   - Personal shortcuts: my-data, team-stuff, proj-files\n"
+            "   - Emergency names: urgent-backup, critical-restore, asap-data",
+            "**Regional and office-specific patterns**:\n"
+            "   - Office locations: sf-backup, nyc-data, london-assets\n"
+            "   - Regional compliance: gdpr-backup, ccpa-data, hipaa-archive\n"
+            "   - Time zones: pst-logs, est-backup, gmt-data\n"
+            "   - Language mixing: datos-backup, donnees-archive",
+            "**Adversarial patterns**:\n"
+            + CommonPromptFragments.adversarial_thinking_instructions(),
         ]
         methodology = PromptTemplate.format_numbered_list(methodology_steps)
+
+        good_examples = [
+            ("tesla-prod", "obvious production bucket"),
+            ("tsla-ml", "abbreviated company + department"),
+            ("autopilot-dev", "project name + environment"),
+            ("test-bucket-do-not-delete", "test resource that became critical"),
+            ("john-backup", "personal developer bucket"),
+            ("temp-2019", "temporary bucket from years ago"),
+            ("poc-data", "proof of concept that went to production"),
+            ("legacy-app-backup", "migration artifact"),
+            ("q1-reports", "time-based naming"),
+            ("jenkins-artifacts", "CI/CD related bucket"),
+            ("hotfix-jan23", "emergency fix bucket"),
+            ("vendor-uploads", "third-party integration"),
+            ("tf-state", "terraform state - abbreviated"),
+            ("old-old-prod", "multiple migration layers"),
+        ]
+
+        bad_examples = [
+            ("bucket123456", "random numbers without context"),
+            ("aaaaaaa", "repeated characters"),
+            ("my-s3-bucket", "generic S3 reference"),
+            ("test-test-test", "excessive repetition"),
+            ("super-long-bucket-name-that-exceeds-limits", "too long"),
+        ]
+
+        examples_section = CommonPromptFragments.create_few_shot_examples(
+            good_examples, bad_examples
+        )
 
         input_spec = (
             "Seed words: {seed_words}\n"
@@ -178,11 +225,12 @@ class CloudResourceWordlistGenerator(WordlistGenerator):
             "Output exactly {wordlist_length} cloud resource names",
             "One resource name per line, no other text",
             "Mix obvious and non-obvious but plausible names",
-            "Include abbreviations and shortcuts developers would use",
-            "Reflect how real teams name resources under time pressure",
+            "Include migration artifacts and misconfigurations",
+            "Reflect real naming chaos from rapid scaling",
             "Lowercase only, hyphens and underscores allowed",
             "Length: 3-63 characters per name",
             "No duplicates",
+            CommonPromptFragments.diversity_requirements(),
         ]
 
         constraints = [
@@ -193,21 +241,6 @@ class CloudResourceWordlistGenerator(WordlistGenerator):
             "Do NOT use special characters except hyphens and underscores",
         ]
 
-        realistic_examples = {
-            "realistic_patterns": dedent(
-                """\
-                Examples of realistic cloud resource names:
-                - Quick development names: tsl-test, auto-demo, temp-data
-                - Project names: autopilot-training, battery-sim, fleet-analytics
-                - Abbreviated names: tsla-ml, veh-api, diag-logs
-                - Tool-specific: jenkins-builds, airflow-dags, grafana-dashboards
-                - Time-based: backup-2024, archive-q1, snapshot-daily
-                - Team names: platform-tools, mobile-assets, ml-datasets
-                - Internal refs: project-x, operation-sunset, team-alpha-data\
-                """
-            )
-        }
-
         return PromptTemplate.create_prompt(
             role=role,
             task=task,
@@ -216,7 +249,10 @@ class CloudResourceWordlistGenerator(WordlistGenerator):
             input_spec=input_spec,
             output_requirements=PromptTemplate.format_list(output_requirements),
             constraints=PromptTemplate.format_list(constraints),
-            additional_sections=realistic_examples,
+            additional_sections={
+                "context_analysis": context,
+                "examples": examples_section,
+            },
         )
 
     def get_usage_instructions(self) -> str:
