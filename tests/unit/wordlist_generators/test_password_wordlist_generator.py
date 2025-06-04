@@ -84,7 +84,10 @@ class TestPasswordWordlistGenerator:
         prompt = generator.build_prompt()
         assert "john, smith, chicago" in prompt
         assert "50" in prompt
-        assert "password cracking" in prompt
+        assert any(
+            term in prompt.lower()
+            for term in ["password", "penetration testing", "wordlist"]
+        )
 
     def test_build_prompt_with_additional_instructions(self, generator):
         generator.add_seed_words("test")

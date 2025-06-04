@@ -96,10 +96,18 @@ class WordlistGenerator(ABC):
         if not self._seed_words:
             raise ValueError("No seed words provided")
 
-        base_prompt = self._get_system_prompt().format(
-            seed_words=", ".join(self._seed_words),
-            wordlist_length=self._wordlist_length,
-        )
+        # Try to use detailed prompt if available, fallback to simple prompt
+        if hasattr(self, "_get_detailed_system_prompt"):
+            detailed_prompt_method = self._get_detailed_system_prompt
+            base_prompt: str = detailed_prompt_method().format(
+                seed_words=", ".join(self._seed_words),
+                wordlist_length=self._wordlist_length,
+            )
+        else:
+            base_prompt = self._get_system_prompt().format(
+                seed_words=", ".join(self._seed_words),
+                wordlist_length=self._wordlist_length,
+            )
 
         if self._additional_instructions:
             return (

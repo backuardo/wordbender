@@ -107,7 +107,9 @@ class TestSubdomainWordlistGenerator:
         prompt = generator.build_prompt()
         assert "acme, cloud, newyork" in prompt
         assert "100" in prompt
-        assert "subdomain wordlists" in prompt
+        assert any(
+            term in prompt.lower() for term in ["subdomain", "dns", "enumeration"]
+        )
 
     @pytest.mark.parametrize(
         "length,expected",
