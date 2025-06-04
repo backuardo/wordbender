@@ -102,10 +102,10 @@ class PasswordWordlistGenerator(WordlistGenerator):
         )
 
         task = (
-            "Generate a targeted password base wordlist from personal intelligence "
-            "about a specific individual. Focus on realistic human password "
-            "selection behaviors based on personal significance, emotional "
-            "attachment, and human laziness patterns."
+            "Generate base words from personal intelligence that will be fed into "
+            "hashcat for mutation. Focus on single meaningful words with personal "
+            "significance. Do NOT create combinations - generate individual words "
+            "that hashcat can then combine, modify, and mutate with rules."
         )
 
         intelligence_items = [
@@ -129,36 +129,31 @@ class PasswordWordlistGenerator(WordlistGenerator):
         methodology_parts = [
             "**Chain-of-Thought Analysis**:\n"
             + CommonPromptFragments.chain_of_thought_instructions(),
-            "**Name variations**: Full names, nicknames, shortened versions, "
-            "combinations\n"
-            '   - If "john": include john, johnny, johnnie, johny, jr, jsmith\n'
-            '   - If "smith": include smith, smiths, smithy, smitty',
-            "**Keyboard patterns from seeds**:\n"
-            "   - Keyboard walks starting with seed letters\n"
-            "   - Pattern variations using keyboard layout",
-            "**Personal significance expansion**:\n"
-            "   - Family/pet names and their common variations\n"
-            "   - Favorite teams → team names, mascots, cities, rivalries, players\n"
-            "   - Hobbies → equipment, terminology, famous figures, brands\n"
-            "   - Places → city names, nicknames, zip codes, area codes, landmarks",
-            "**Emotional connections**:\n"
-            "   - Combine related personal elements "
-            "(petname + hometown, team + birthyear)\n"
-            "   - Important life events and associated terms\n"
-            "   - Childhood memories and references\n"
-            "   - Anniversary combinations",
-            "**Professional identity**:\n"
-            "   - Company names, abbreviations, department names\n"
-            "   - Job titles, project names, industry terms\n"
-            "   - Internal project codenames\n"
-            "   - Conference room names, building names",
-            "**Common password psychology**:\n"
-            "   - Things they're proud of or emotionally attached to\n"
-            "   - Easy-to-remember personal combinations\n"
-            "   - Seasonal or temporal references from their life\n"
-            "   - Words visible from their desk (monitors, posters, books)",
-            "**Adversarial patterns**:\n"
-            + CommonPromptFragments.adversarial_thinking_instructions(),
+            "**Name Variations**: Generate individual name-based words:\n"
+            "   - Nicknames and diminutives\n"
+            "   - Alternative spellings and variations\n"
+            "   - Maiden names and family names\n"
+            "   - Usernames and handles",
+            "**Semantic Expansion**: Extract meaningful related words:\n"
+            "   - Sports teams → team names, mascots, cities\n"
+            "   - Locations → landmarks, neighborhoods, regional terms\n"
+            "   - Professions → industry terms, certifications, tools\n"
+            "   - Hobbies → equipment names, terminology, brands",
+            "**Personal Significance**: Focus on emotionally meaningful words:\n"
+            "   - Pet names and animal types\n"
+            "   - School names and alma maters\n"
+            "   - Achievement and milestone terms\n"
+            "   - Cultural and identity markers",
+            "**Contextual Terms**: Generate words from implied context:\n"
+            "   - Military → ranks, units, terminology, slang\n"
+            "   - Academic → subjects, degrees, institutions\n"
+            "   - Geographic → climate, features, local culture\n"
+            "   - Temporal → seasons, months, decades, eras",
+            "**Base Word Selection**: Choose single words that:\n"
+            "   - Have personal emotional significance\n"
+            "   - Are easy to remember and meaningful\n"
+            "   - Represent core concepts from the seeds\n"
+            "   - Will serve as good mutation bases for hashcat",
         ]
         methodology = (
             "Analyze the personal intelligence to generate words people actually "
@@ -167,24 +162,24 @@ class PasswordWordlistGenerator(WordlistGenerator):
         )
 
         good_examples = [
-            ("johnsmith", "combines first and last name - very common pattern"),
-            ("smithjohn", "reversed name combination - people think it's clever"),
-            ("johnny", "nickname variant of john - emotional attachment"),
-            ("fluffy", "pet name from seeds - strong emotional connection"),
-            ("fluffysmith", "pet + lastname - memorable personal combination"),
-            ("chicago", "location from seeds - place attachment"),
-            ("bears", "sports team - passion/interest based"),
-            ("bearsfan", "team + fan - identity expression"),
-            ("may1989", "birth month/year - significant date"),
-            ("accounting", "department from professional context"),
+            ("johnny", "nickname variant - personal emotional connection"),
+            ("fluffy", "pet name - strong emotional attachment"),
+            ("chicago", "location - place significance"),
+            ("bears", "sports team - passion/interest"),
+            ("marine", "military service - professional identity"),
+            ("lakeside", "location descriptor - meaningful place"),
+            ("guitarist", "hobby identity - personal interest"),
+            ("rookie", "contextual term - sports/military background"),
+            ("semper", "military motto - cultural significance"),
+            ("blue", "color - could be team colors, eyes, etc"),
         ]
 
         bad_examples = [
-            ("password123", "generic password not related to seeds"),
-            ("qwerty", "keyboard pattern not derived from seeds"),
+            ("johnsmith123", "mechanical combination - hashcat will do this"),
+            ("password", "generic word unrelated to seeds"),
             ("admin", "generic term with no personal connection"),
-            ("iloveyou", "common phrase not connected to intelligence"),
-            ("letmein", "generic password unrelated to target"),
+            ("qwerty", "keyboard pattern not derived from seeds"),
+            ("bearschitown85", "complex combination - generate base words instead"),
         ]
 
         examples_section = CommonPromptFragments.create_few_shot_examples(
